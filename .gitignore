@@ -1,0 +1,22 @@
+# 의존성
+node_modules
+
+# 빌드 결과
+dist
+dist-ssr
+
+# 환경변수 — 이 앱은 키를 화면에서 받으므로 원래 필요 없지만, 실수로 커밋되는 것을 막는다
+.env
+.env.*
+
+# 로컬 설정
+*.local
+.claude/settings.local.json
+
+# 에디터·OS
+.vite
+.DS_Store
+.idea
+
+# 타입 빌드 캐시
+*.tsbuildinfo
