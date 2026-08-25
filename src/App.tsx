@@ -41,7 +41,7 @@ export default function App() {
 
   return (
     <div className="min-h-screen w-full bg-bg">
-      <div className="mx-auto max-w-app px-5 py-6 pb-16">
+      <div className="app-shell mx-auto max-w-app">
         {screen !== 'home' && (
           <>
             <AppHeader

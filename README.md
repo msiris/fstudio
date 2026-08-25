@@ -3,6 +3,18 @@
 얼굴 편집과 이미지 생성을 한 화면에서 다루는 개인용 웹앱.
 세 모드 모두 Google Gemini 무료 티어로 동작하며, 서버 없이 브라우저에서 API를 직접 호출한다.
 
+**배포 주소 — https://msiris.github.io/fstudio/**
+
+## 휴대폰에 설치하기
+
+홈 화면에 설치하면 주소창 없이 앱처럼 뜬다.
+
+**Android Chrome** — 위 주소를 열고 우측 상단 ⋮ → **앱 설치** (또는 홈 화면에 추가)
+**iOS Safari** — 위 주소를 열고 공유 버튼 → **홈 화면에 추가**
+
+설치 후 첫 실행 때 API 키를 한 번 넣어두면 계속 유지된다.
+인터넷 없이도 화면은 뜨지만, 이미지 생성은 Gemini 호출이라 연결이 필요하다.
+
 ## 실행
 
 ```bash
@@ -10,13 +22,21 @@ npm install
 npm run dev
 ```
 
-`http://localhost:5173` 에서 열린다.
+`http://localhost:5173/fstudio/` 에서 열린다.
+경로에 `/fstudio/` 가 붙는 것은 GitHub Pages 프로젝트 페이지 주소와 맞추기 위해서다
+(`vite.config.ts` 의 `base`).
 
 | 명령 | 설명 |
 |---|---|
 | `npm run dev` | 개발 서버 |
 | `npm run build` | 타입 검사 후 `dist/` 로 빌드 |
 | `npm run preview` | 빌드 결과 미리보기 |
+| `npm run icons` | 앱 아이콘 PNG 재생성 |
+
+## 배포
+
+`main` 에 푸시하면 GitHub Actions가 빌드해서 GitHub Pages로 올린다
+(`.github/workflows/deploy.yml`). 별도로 할 일은 없다.
 
 ## API 키
 
@@ -71,6 +91,11 @@ src/
 │  └─ keyStore.ts        API 키 저장
 ├─ components/           Card, ImageDrop, Chip, Toggle, ResultPanel 등
 └─ screens/              Home, SingleSwap, MultiSwap, ImageGen
+
+public/
+├─ manifest.webmanifest  홈 화면 설치 정보
+├─ sw.js                 앱 껍데기 캐시. Gemini 호출은 건드리지 않는다
+└─ icon-*.png            scripts/make-icons.mjs 가 만든다
 ```
 
 ### 프롬프트 레이어

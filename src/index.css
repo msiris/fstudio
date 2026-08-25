@@ -17,3 +17,11 @@ body {
   font-family: ui-sans-serif, system-ui, 'Pretendard', 'Apple SD Gothic Neo',
     'Malgun Gothic', sans-serif;
 }
+
+/* 노치·홈 인디케이터가 있는 기기에서 설치형으로 띄웠을 때의 여백 */
+.app-shell {
+  padding-top: max(1.5rem, env(safe-area-inset-top));
+  padding-bottom: max(4rem, env(safe-area-inset-bottom));
+  padding-left: max(1.25rem, env(safe-area-inset-left));
+  padding-right: max(1.25rem, env(safe-area-inset-right));
+}
