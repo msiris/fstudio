@@ -37,9 +37,8 @@ export default function Home({ go }: { go: (screen: Screen) => void }) {
       </div>
 
       <Notice>
-        세 모드 모두 Gemini 무료 티어로 동작합니다. 모드 화면 우측 상단에서 API 키를
-        넣어주세요. 얼굴 교체는 모델이 거부하는 경우가 있는데, 그때는 모델이 보낸 설명을
-        그대로 보여줍니다.
+        모드 화면 우측 상단에서 Gemini API 키를 넣어주세요. 이미지 생성 모델은 무료 한도가
+        없어 결제가 연결된 프로젝트의 키가 필요합니다. 장당 약 $0.04입니다.
       </Notice>
     </div>
   );

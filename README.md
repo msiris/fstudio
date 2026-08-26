@@ -1,7 +1,7 @@
 # Face Studio
 
 얼굴 편집과 이미지 생성을 한 화면에서 다루는 개인용 웹앱.
-세 모드 모두 Google Gemini 무료 티어로 동작하며, 서버 없이 브라우저에서 API를 직접 호출한다.
+서버 없이 브라우저에서 Google Gemini API를 직접 호출한다.
 
 **배포 주소 — https://msiris.github.io/fstudio/**
 
@@ -38,11 +38,30 @@ npm run dev
 `main` 에 푸시하면 GitHub Actions가 빌드해서 GitHub Pages로 올린다
 (`.github/workflows/deploy.yml`). 별도로 할 일은 없다.
 
+## 비용 — 무료가 아니다
+
+**Gemini API에서 이미지를 만드는 모델은 전부 유료다.** 가격표의 Free Tier 칸이
+Gemini 2.5 Flash Image, 3.1 Flash Image, 3 Pro Image, Imagen 4, Veo 모두 "Not available" 이다.
+무료 티어 할당량이 0이라, 결제가 연결되지 않은 키로는 **첫 호출부터 429**가 난다.
+
+| 항목 | 비용 |
+|---|---|
+| `gemini-2.5-flash-image` 이미지 1장 | 약 **$0.039** |
+| `gemini-2.5-flash` 한글→영어 번역 | 무료 티어로 처리 |
+
+한글로 프롬프트를 쓰면 번역 호출이 한 번 더 나가지만 그쪽은 무료다.
+실제로 돈이 드는 것은 이미지 생성 호출뿐이다.
+
 ## API 키
 
-1. [aistudio.google.com/apikey](https://aistudio.google.com/apikey) 에서 무료 발급 (`AIza...` 로 시작)
-2. 앱에서 아무 모드나 열고 **우측 상단 열쇠 버튼** 클릭
-3. 입력칸에 붙여넣기 — 저장 버튼은 없다. 입력하는 즉시 저장된다
+1. [console.cloud.google.com/billing](https://console.cloud.google.com/billing) 에서
+   결제 계정을 만들고 사용할 프로젝트에 연결한다
+2. [aistudio.google.com/apikey](https://aistudio.google.com/apikey) 에서
+   **그 프로젝트의** 키를 발급한다 (`AIza...` 로 시작)
+3. 앱에서 아무 모드나 열고 **우측 상단 열쇠 버튼** 클릭
+4. 입력칸에 붙여넣기 — 저장 버튼은 없다. 입력하는 즉시 저장된다
+
+결제를 연결하지 않은 키를 넣으면 앱이 429와 함께 그 사실을 안내한다.
 
 키는 이 브라우저의 `localStorage`(`face-studio:gemini-api-key`)에만 저장된다.
 소스, 커밋, 빌드 결과 어디에도 들어가지 않는다. 공용 PC에서는 키 패널의 휴지통 버튼으로 지우고 나온다.
@@ -125,7 +144,7 @@ export const GEMINI_TEXT_MODEL = 'gemini-2.5-flash';
 ## 오류 처리
 
 - 타임아웃 60초
-- 429는 "무료 한도 초과" 로 구분해 안내
+- 429는 이미지 모델의 유료 전용 여부를 짚어 안내하고, API가 보낸 원문을 함께 보여준다
 - 실패해도 입력한 프롬프트와 이미지는 지우지 않는다
 
 ## 기술 스택

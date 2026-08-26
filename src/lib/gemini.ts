@@ -28,12 +28,21 @@ export type GeminiResult =
 /** 화면에 그대로 띄울 문구를 담은 오류. */
 export class GeminiError extends Error {}
 
-function httpMessage(status: number, raw: string | undefined): string {
+function baseMessage(status: number, raw: string | undefined, model: string): string {
   if (status === 429) {
-    return '무료 한도를 초과했습니다. 잠시 뒤 다시 시도하거나, 한도가 초기화된 다음에 이어서 쓰세요.';
+    // 이미지 생성 모델은 무료 한도가 0이다. 새 키로 첫 호출부터 429가 나는 것이 정상이다.
+    if (model === GEMINI_IMAGE_MODEL) {
+      return [
+        '이미지 생성 모델은 무료 한도가 없습니다.',
+        `"${model}" 을 포함해 이미지를 만드는 Gemini 모델은 전부 유료입니다. 키가 속한 Google Cloud 프로젝트에 결제를 연결해야 호출됩니다.`,
+        'console.cloud.google.com/billing 에서 결제 계정을 만들고 프로젝트에 연결한 뒤, aistudio.google.com/apikey 에서 그 프로젝트의 키를 쓰세요.',
+        '결제가 이미 연결돼 있다면 분당 요청 한도에 걸린 것이니 잠시 뒤 다시 시도하세요.',
+      ].join(' ');
+    }
+    return '요청 한도에 걸렸습니다. 잠시 뒤 다시 시도하거나, 한도가 초기화된 다음에 이어서 쓰세요.';
   }
   if (status === 404) {
-    return `모델을 찾지 못했습니다. 모델명을 확인하세요 — 지금 설정은 "${GEMINI_IMAGE_MODEL}"입니다. src/lib/gemini.ts의 상수를 최신 모델명으로 바꾸면 됩니다.`;
+    return `모델을 찾지 못했습니다. 모델명을 확인하세요 — 지금 설정은 "${model}"입니다. src/lib/gemini.ts의 상수를 최신 모델명으로 바꾸면 됩니다.`;
   }
   if (status === 400 && raw && /API key|API_KEY/i.test(raw)) {
     return 'API 키 형식이 맞지 않습니다. 우측 상단 키 버튼에서 다시 붙여넣어 주세요.';
@@ -44,7 +53,16 @@ function httpMessage(status: number, raw: string | undefined): string {
   if (status >= 500) {
     return `모델 서버가 응답하지 못했습니다 (${status}). 잠시 뒤 같은 요청을 다시 보내보세요.`;
   }
-  return raw || `요청이 실패했습니다 (${status}).`;
+  return `요청이 실패했습니다 (${status}).`;
+}
+
+/**
+ * 안내 문구 뒤에 API가 보낸 원문을 붙인다.
+ * 어느 할당량에 걸렸는지 같은 정보는 원문에만 있어서, 요약하면 원인을 못 찾는다.
+ */
+function httpMessage(status: number, raw: string | undefined, model: string): string {
+  const base = baseMessage(status, raw, model);
+  return raw ? `${base}\n\nAPI가 보낸 내용:\n${raw}` : base;
 }
 
 async function post(
@@ -83,7 +101,7 @@ async function post(
   }
 
   const data: GenerateContentResponse = await res.json().catch(() => ({}));
-  if (!res.ok) throw new GeminiError(httpMessage(res.status, data.error?.message));
+  if (!res.ok) throw new GeminiError(httpMessage(res.status, data.error?.message, model));
   return data;
 }
 
