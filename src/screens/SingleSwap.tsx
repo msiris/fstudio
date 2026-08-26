@@ -2,11 +2,14 @@ import { Image as ImageIcon, User, Wand2 } from 'lucide-react';
 import Card from '../components/Card';
 import EditInstruction from '../components/EditInstruction';
 import ImageDrop from '../components/ImageDrop';
+import ModelPicker from '../components/ModelPicker';
 import PrimaryButton from '../components/PrimaryButton';
 import ResultPanel from '../components/ResultPanel';
 import SectionLabel from '../components/SectionLabel';
 import Toggle from '../components/Toggle';
 import { SINGLE_PRESETS } from '../constants';
+import { EDIT_MODELS, findModel } from '../lib/falModels';
+import type { ApiKeys } from '../lib/keyStore';
 import { buildEditPrompt } from '../lib/prompt';
 import { runImageRequest } from '../lib/run';
 import type { SingleState } from '../state';
@@ -14,21 +17,22 @@ import type { SingleState } from '../state';
 export default function SingleSwap({
   state,
   onChange,
-  apiKey,
+  keys,
 }: {
   state: SingleState;
   onChange: (next: Partial<SingleState>) => void;
-  apiKey: string;
+  keys: ApiKeys;
 }) {
+  const model = findModel(EDIT_MODELS, state.model);
   const instruction = state.instruction.trim();
   const ready = Boolean(state.target) && Boolean(instruction);
 
   const run = async () => {
     if (!ready || state.busy) return;
 
-    if (!apiKey.trim()) {
+    if (!keys.fal.trim()) {
       onChange({
-        note: '우측 상단 키 버튼을 눌러 Google AI Studio 키를 먼저 넣어주세요. aistudio.google.com에서 무료로 발급됩니다.',
+        note: '우측 상단 키 버튼을 눌러 fal.ai 키를 먼저 넣어주세요. fal.ai/dashboard/keys 에서 발급합니다.',
       });
       return;
     }
@@ -42,7 +46,10 @@ export default function SingleSwap({
     const outcome = await runImageRequest({
       raw: instruction,
       images,
-      apiKey,
+      ratio: 'Original',
+      model,
+      falKey: keys.fal,
+      geminiKey: keys.gemini,
       build: (text) => buildEditPrompt(text, { referenceFaces, enhance: state.enhance }),
     });
 
@@ -78,6 +85,12 @@ export default function SingleSwap({
         onChange={(v) => onChange({ instruction: v })}
         presets={SINGLE_PRESETS}
         placeholder="사진을 어떻게 바꿀지 적어주세요. 아래 칩을 눌러 시작해도 됩니다."
+      />
+
+      <ModelPicker
+        models={EDIT_MODELS}
+        value={state.model}
+        onChange={(id) => onChange({ model: id })}
       />
 
       <Toggle

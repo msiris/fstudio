@@ -3,10 +3,13 @@ import Card from '../components/Card';
 import Chip from '../components/Chip';
 import EditInstruction from '../components/EditInstruction';
 import ImageDrop from '../components/ImageDrop';
+import ModelPicker from '../components/ModelPicker';
 import PrimaryButton from '../components/PrimaryButton';
 import ResultPanel from '../components/ResultPanel';
 import SectionLabel from '../components/SectionLabel';
 import { FACE_COUNTS, MULTI_PRESETS } from '../constants';
+import { EDIT_MODELS, findModel } from '../lib/falModels';
+import type { ApiKeys } from '../lib/keyStore';
 import { buildEditPrompt } from '../lib/prompt';
 import { runImageRequest } from '../lib/run';
 import type { MultiState } from '../state';
@@ -15,12 +18,14 @@ import type { ImageValue } from '../types';
 export default function MultiSwap({
   state,
   onChange,
-  apiKey,
+  keys,
 }: {
   state: MultiState;
   onChange: (next: Partial<MultiState>) => void;
-  apiKey: string;
+  keys: ApiKeys;
 }) {
+  const model = findModel(EDIT_MODELS, state.model);
+
   // 슬롯 배열은 항상 4칸을 들고 있고 count만큼만 그린다.
   // 얼굴 수를 줄였다 늘려도 올려둔 이미지가 살아남는다.
   const setFace = (index: number, value: ImageValue) => {
@@ -40,9 +45,9 @@ export default function MultiSwap({
   const run = async () => {
     if (!ready || state.busy) return;
 
-    if (!apiKey.trim()) {
+    if (!keys.fal.trim()) {
       onChange({
-        note: '우측 상단 키 버튼을 눌러 Google AI Studio 키를 먼저 넣어주세요. aistudio.google.com에서 무료로 발급됩니다.',
+        note: '우측 상단 키 버튼을 눌러 fal.ai 키를 먼저 넣어주세요. fal.ai/dashboard/keys 에서 발급합니다.',
       });
       return;
     }
@@ -52,7 +57,10 @@ export default function MultiSwap({
     const outcome = await runImageRequest({
       raw: instruction,
       images: [state.target as string, ...usedFaces],
-      apiKey,
+      ratio: 'Original',
+      model,
+      falKey: keys.fal,
+      geminiKey: keys.gemini,
       build: (text) => buildEditPrompt(text, { referenceFaces: usedFaces.length }),
     });
 
@@ -118,6 +126,12 @@ export default function MultiSwap({
         onChange={(v) => onChange({ instruction: v })}
         presets={MULTI_PRESETS}
         placeholder="단체 사진을 어떻게 바꿀지 적어주세요. 아래 칩을 눌러 시작해도 됩니다."
+      />
+
+      <ModelPicker
+        models={EDIT_MODELS}
+        value={state.model}
+        onChange={(id) => onChange({ model: id })}
       />
 
       <PrimaryButton disabled={!ready} busy={state.busy} onClick={() => void run()}>

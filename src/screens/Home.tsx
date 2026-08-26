@@ -37,8 +37,9 @@ export default function Home({ go }: { go: (screen: Screen) => void }) {
       </div>
 
       <Notice>
-        모드 화면 우측 상단에서 Gemini API 키를 넣어주세요. 이미지 생성 모델은 무료 한도가
-        없어 결제가 연결된 프로젝트의 키가 필요합니다. 장당 약 $0.04입니다.
+        이미지는 fal.ai로 만듭니다. 모드 화면 우측 상단에서 fal 키를 넣어주세요. 한글
+        프롬프트는 Gemini 무료 티어로 영어로 옮긴 뒤 보냅니다. 모드마다 모델을 바꿀 수
+        있습니다.
       </Notice>
     </div>
   );

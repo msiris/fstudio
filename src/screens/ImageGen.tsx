@@ -2,11 +2,14 @@ import { Image as ImageIcon, Sparkles } from 'lucide-react';
 import Card from '../components/Card';
 import Chip from '../components/Chip';
 import ImageDrop from '../components/ImageDrop';
+import ModelPicker from '../components/ModelPicker';
 import PrimaryButton from '../components/PrimaryButton';
 import ResultPanel from '../components/ResultPanel';
 import SectionLabel from '../components/SectionLabel';
 import { FOCUS_RING } from '../components/ui';
 import { MAX_REFERENCES, RATIOS } from '../constants';
+import { findModel, GENERATE_MODELS } from '../lib/falModels';
+import type { ApiKeys } from '../lib/keyStore';
 import { buildGenerationPrompt } from '../lib/prompt';
 import { runImageRequest } from '../lib/run';
 import type { GenState } from '../state';
@@ -14,12 +17,14 @@ import type { GenState } from '../state';
 export default function ImageGen({
   state,
   onChange,
-  apiKey,
+  keys,
 }: {
   state: GenState;
   onChange: (next: Partial<GenState>) => void;
-  apiKey: string;
+  keys: ApiKeys;
 }) {
+  const model = findModel(GENERATE_MODELS, state.model);
+
   const addRef = (value: string | null) => {
     if (!value) return;
     onChange({ refs: [...state.refs, value].slice(0, MAX_REFERENCES) });
@@ -33,9 +38,9 @@ export default function ImageGen({
     const raw = state.prompt.trim();
     if (!raw || state.busy) return;
 
-    if (!apiKey.trim()) {
+    if (!keys.fal.trim()) {
       onChange({
-        note: '우측 상단 키 버튼을 눌러 Google AI Studio 키를 먼저 넣어주세요. aistudio.google.com에서 무료로 발급됩니다.',
+        note: '우측 상단 키 버튼을 눌러 fal.ai 키를 먼저 넣어주세요. fal.ai/dashboard/keys 에서 발급합니다.',
       });
       return;
     }
@@ -45,8 +50,17 @@ export default function ImageGen({
     const outcome = await runImageRequest({
       raw,
       images: state.refs,
-      apiKey,
-      build: (text) => buildGenerationPrompt(text, state.ratio, state.refs.length),
+      ratio: state.ratio,
+      model,
+      falKey: keys.fal,
+      geminiKey: keys.gemini,
+      // 참조를 못 받는 모델에는 "참조가 첨부됐다"고 말하지 않는다.
+      build: (text) =>
+        buildGenerationPrompt(
+          text,
+          state.ratio,
+          model.acceptsImages ? state.refs.length : 0,
+        ),
     });
 
     onChange({ ...outcome, busy: false });
@@ -65,6 +79,12 @@ export default function ImageGen({
           className={`w-full resize-none rounded-card border border-line bg-cardAlt p-3 text-sm text-text placeholder:text-muted ${FOCUS_RING}`}
         />
       </Card>
+
+      <ModelPicker
+        models={GENERATE_MODELS}
+        value={state.model}
+        onChange={(id) => onChange({ model: id })}
+      />
 
       <div>
         <div className="mb-2 text-sm font-semibold text-text">비율</div>
@@ -99,6 +119,12 @@ export default function ImageGen({
             <ImageDrop value={null} onChange={addRef} label="참조 이미지 추가" size="sm" />
           )}
         </div>
+        {state.refs.length > 0 && !model.acceptsImages && (
+          <p className="mt-3 text-xs leading-relaxed text-muted">
+            {model.label}은 참조 이미지를 쓰지 않습니다. 참조를 반영하려면 다른 모델을
+            골라주세요.
+          </p>
+        )}
       </Card>
 
       <PrimaryButton
