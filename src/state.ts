@@ -10,8 +10,8 @@ export type SingleState = {
   target: ImageValue;
   source: ImageValue;
   enhance: boolean;
-  /** 첫 번째 사진 인물의 얼굴을 그대로 유지한다. */
-  preserveIdentity: boolean;
+  /** 지시가 말한 것만 바꾸고 나머지는 원본 그대로 둔다. */
+  scopeLock: boolean;
   instruction: string;
   /** 고른 fal 모델의 엔드포인트 ID. */
   model: string;
@@ -25,7 +25,7 @@ export type MultiState = {
   target: ImageValue;
   count: number;
   faces: ImageValue[];
-  preserveIdentity: boolean;
+  scopeLock: boolean;
   instruction: string;
   model: string;
   busy: boolean;
@@ -38,8 +38,8 @@ export type GenState = {
   prompt: string;
   ratio: Ratio;
   refs: string[];
-  /** 참조 이미지가 있을 때만 의미가 있다. */
-  preserveIdentity: boolean;
+  /** 지시가 말한 것만 바꾼다. 참조 이미지가 있을 때만 의미가 있다. */
+  scopeLock: boolean;
   model: string;
   busy: boolean;
   result: string | null;
@@ -51,7 +51,7 @@ export const initialSingle: SingleState = {
   target: null,
   source: null,
   enhance: true,
-  preserveIdentity: true,
+  scopeLock: true,
   instruction: '',
   model: DEFAULT_EDIT_MODEL,
   busy: false,
@@ -64,7 +64,7 @@ export const initialMulti: MultiState = {
   target: null,
   count: 2,
   faces: [null, null, null, null],
-  preserveIdentity: true,
+  scopeLock: true,
   instruction: '',
   model: DEFAULT_EDIT_MODEL,
   busy: false,
@@ -77,7 +77,7 @@ export const initialGen: GenState = {
   prompt: '',
   ratio: 'Original',
   refs: [],
-  preserveIdentity: true,
+  scopeLock: true,
   model: DEFAULT_GENERATE_MODEL,
   busy: false,
   result: null,

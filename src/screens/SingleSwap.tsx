@@ -54,7 +54,7 @@ export default function SingleSwap({
         buildEditPrompt(text, {
           referenceFaces,
           enhance: state.enhance,
-          preserveIdentity: state.preserveIdentity,
+          scopeLock: state.scopeLock,
         }),
     });
 
@@ -87,13 +87,7 @@ export default function SingleSwap({
 
       <EditInstruction
         value={state.instruction}
-        // 얼굴 교체 프리셋을 고르면 얼굴 유지를 자동으로 끈다. 둘은 양립할 수 없다.
-        onChange={(v, preset) =>
-          onChange({
-            instruction: v,
-            ...(preset ? { preserveIdentity: !preset.swapsFace } : {}),
-          })
-        }
+        onChange={(v) => onChange({ instruction: v })}
         presets={SINGLE_PRESETS}
         placeholder="사진을 어떻게 바꿀지 적어주세요. 아래 칩을 눌러 시작해도 됩니다."
       />
@@ -106,10 +100,10 @@ export default function SingleSwap({
 
       <Toggle
         icon={ShieldCheck}
-        on={state.preserveIdentity}
-        onChange={(preserveIdentity) => onChange({ preserveIdentity })}
-        title="얼굴 유지"
-        desc="얼굴을 바꾸는 지시라면 꺼주세요"
+        on={state.scopeLock}
+        onChange={(scopeLock) => onChange({ scopeLock })}
+        title="지시한 것만 변경"
+        desc="명령하지 않은 부분은 원본 그대로 둡니다"
       />
 
       <Toggle

@@ -59,7 +59,7 @@ export default function ImageGen({
       build: (text) =>
         buildGenerationPrompt(text, state.ratio, {
           refCount: model.acceptsImages ? state.refs.length : 0,
-          preserveIdentity: state.preserveIdentity,
+          scopeLock: state.scopeLock,
         }),
     });
 
@@ -130,10 +130,10 @@ export default function ImageGen({
       {state.refs.length > 0 && model.acceptsImages && (
         <Toggle
           icon={ShieldCheck}
-          on={state.preserveIdentity}
-          onChange={(preserveIdentity) => onChange({ preserveIdentity })}
-          title="얼굴 유지"
-          desc="첫 번째 이미지 인물의 얼굴을 그대로 둡니다"
+          on={state.scopeLock}
+          onChange={(scopeLock) => onChange({ scopeLock })}
+          title="지시한 것만 변경"
+          desc="명령하지 않은 부분은 원본 그대로 둡니다"
         />
       )}
 
