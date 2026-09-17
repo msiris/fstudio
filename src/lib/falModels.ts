@@ -37,15 +37,18 @@ export type FalModel = {
   resolve(input: ModelInput): FalRequest;
 };
 
-/** image_size 프리셋을 쓰는 모델용 (Seedream, FLUX). */
-const IMAGE_SIZE: Record<Ratio, string> = {
-  Original: 'auto',
+/** image_size 프리셋을 쓰는 모델용 (Seedream, FLUX). Original은 모델마다 값이 달라 따로 받는다. */
+const IMAGE_SIZE: Record<Exclude<Ratio, 'Original'>, string> = {
   '3:4': 'portrait_4_3',
   '9:16': 'portrait_16_9',
   '16:9': 'landscape_16_9',
   '1:1': 'square_hd',
   '4:3': 'landscape_4_3',
 };
+
+function sizeFor(ratio: Ratio, autoSize: string): string {
+  return ratio === 'Original' ? autoSize : IMAGE_SIZE[ratio];
+}
 
 /** aspect_ratio를 쓰는 모델용 (Nano Banana). */
 const ASPECT_RATIO: Record<Ratio, string> = {
@@ -57,36 +60,78 @@ const ASPECT_RATIO: Record<Ratio, string> = {
   '4:3': '4:3',
 };
 
-const SEEDREAM_T2I = 'fal-ai/bytedance/seedream/v4/text-to-image';
-const SEEDREAM_EDIT = 'fal-ai/bytedance/seedream/v4/edit';
 const NANO_T2I = 'fal-ai/nano-banana';
 const NANO_EDIT = 'fal-ai/nano-banana/edit';
 const FLUX_SCHNELL = 'fal-ai/flux/schnell';
 const KONTEXT_SINGLE = 'fal-ai/flux-pro/kontext';
 const KONTEXT_MULTI = 'fal-ai/flux-pro/kontext/multi';
 
-/** 이미지가 붙으면 edit 엔드포인트로 간다. Seedream은 참조를 10장까지 받는다. */
-const seedream = (kind: ModelKind): FalModel => ({
-  key: kind === 'edit' ? SEEDREAM_EDIT : SEEDREAM_T2I,
-  label: 'Seedream 4',
-  note:
-    kind === 'edit'
-      ? '참조 이미지를 최대 10장까지 받는다. 여러 얼굴을 한 번에 다룰 때 유리하지만, 전체를 다시 합성해서 얼굴이 조금씩 흔들릴 수 있다.'
-      : '균형이 좋아 기본값으로 둔다. 참조 이미지를 넣으면 편집 엔드포인트로 자동 전환된다.',
-  kind,
-  acceptsImages: true,
-  resolve: ({ prompt, images, ratio }) =>
-    images.length
-      ? {
-          id: SEEDREAM_EDIT,
-          body: {
-            prompt,
-            image_urls: images,
-            image_size: kind === 'edit' ? 'auto' : IMAGE_SIZE[ratio],
-            num_images: 1,
+type SeedreamSpec = {
+  label: string;
+  /** text-to-image 엔드포인트. v5 pro는 fal-ai/ 접두어가 없다. */
+  t2i: string;
+  edit: string;
+  /**
+   * Original 비율일 때 보낼 image_size.
+   * v4는 'auto'였는데 v4.5부터 사라져서 버전마다 다르다. 틀리면 422가 난다.
+   */
+  autoSize: string;
+  note: Record<ModelKind, string>;
+};
+
+/**
+ * Seedream 계열. 이미지가 붙으면 edit 엔드포인트로 간다.
+ *
+ * 편집일 때는 비율을 지정하지 않고 autoSize로 보낸다.
+ * 비율을 고정하면 구도를 다시 잡으면서 얼굴까지 다시 그린다.
+ */
+const seedream =
+  (spec: SeedreamSpec) =>
+  (kind: ModelKind): FalModel => ({
+    key: kind === 'edit' ? spec.edit : spec.t2i,
+    label: spec.label,
+    note: spec.note[kind],
+    kind,
+    acceptsImages: true,
+    resolve: ({ prompt, images, ratio }) =>
+      images.length
+        ? {
+            id: spec.edit,
+            // 편집에는 비율을 지정하지 않는다. 원본 비율을 벗어나면 구도를 다시 잡으면서
+            // 얼굴까지 다시 그린다. 화면의 비율 선택은 새로 만들 때만 쓴다.
+            body: {
+              prompt,
+              image_urls: images,
+              image_size: spec.autoSize,
+              num_images: 1,
+            },
+          }
+        : {
+            id: spec.t2i,
+            body: { prompt, image_size: sizeFor(ratio, spec.autoSize), num_images: 1 },
           },
-        }
-      : { id: SEEDREAM_T2I, body: { prompt, image_size: IMAGE_SIZE[ratio], num_images: 1 } },
+  });
+
+const seedream5 = seedream({
+  label: 'Seedream 5 Pro',
+  t2i: 'bytedance/seedream/v5/pro/text-to-image',
+  edit: 'bytedance/seedream/v5/pro/edit',
+  autoSize: 'auto_2K',
+  note: {
+    edit: '한 부분만 바꾸고 나머지 화면은 그대로 두도록 만들어진 모델. 얼굴이 흔들린다면 이쪽을 먼저 쓴다.',
+    generate: '가장 최신 Seedream. 참조 이미지를 넣으면 편집 엔드포인트로 자동 전환된다.',
+  },
+});
+
+const seedream45 = seedream({
+  label: 'Seedream 4.5',
+  t2i: 'fal-ai/bytedance/seedream/v4.5/text-to-image',
+  edit: 'fal-ai/bytedance/seedream/v4.5/edit',
+  autoSize: 'auto_2K',
+  note: {
+    edit: '생성과 편집을 한 모델로 처리한다. 참조를 10장까지 받는다. 5 Pro가 안 맞으면 시도해본다.',
+    generate: '생성과 편집을 한 모델로 처리한다. 장당 약 $0.04.',
+  },
 });
 
 const nanoBanana = (kind: ModelKind): FalModel => ({
@@ -152,7 +197,8 @@ const kontext = (kind: ModelKind): FalModel => ({
 
 /** 텍스트로 새 이미지를 만드는 모델. 첫 항목이 기본값이다. */
 export const GENERATE_MODELS: FalModel[] = [
-  seedream('generate'),
+  seedream5('generate'),
+  seedream45('generate'),
   nanoBanana('generate'),
   kontext('generate'),
   {
@@ -165,8 +211,8 @@ export const GENERATE_MODELS: FalModel[] = [
       id: FLUX_SCHNELL,
       body: {
         prompt,
-        // schnell에는 auto가 없다. Original이면 기본값 landscape_4_3을 쓴다.
-        image_size: ratio === 'Original' ? 'landscape_4_3' : IMAGE_SIZE[ratio],
+        // schnell에는 auto 계열이 없다. Original이면 기본값 landscape_4_3을 쓴다.
+        image_size: sizeFor(ratio, 'landscape_4_3'),
         num_images: 1,
         output_format: 'png',
       },
@@ -176,7 +222,8 @@ export const GENERATE_MODELS: FalModel[] = [
 
 /** 사진을 받아 편집하는 모델. Single / Multi Swap이 쓴다. 첫 항목이 기본값이다. */
 export const EDIT_MODELS: FalModel[] = [
-  seedream('edit'),
+  seedream5('edit'),
+  seedream45('edit'),
   kontext('edit'),
   nanoBanana('edit'),
 ];

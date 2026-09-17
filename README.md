@@ -110,14 +110,23 @@ API 스코프 키로 부르면 401이 돌아오고, 그 사정을 키 패널에�
 
 | 모드 | 고를 수 있는 모델 |
 |---|---|
-| Image Gen | **Seedream 4** · Nano Banana · FLUX Kontext · FLUX schnell |
-| Single / Multi Swap | **Seedream 4 Edit** · FLUX Kontext · Nano Banana Edit |
+| Image Gen | **Seedream 5 Pro** · Seedream 4.5 · Nano Banana · FLUX Kontext · FLUX schnell |
+| Single / Multi Swap | **Seedream 5 Pro** · Seedream 4.5 · FLUX Kontext · Nano Banana |
 
-**얼굴이 흔들리면 FLUX Kontext로 바꿔본다.** Seedream과 Nano Banana는 이미지 전체를
-다시 합성하는 방식이라, 프롬프트로 아무리 잠가도 얼굴이 조금씩 달라질 수 있다.
-Kontext는 국소 편집 전용으로 만들어진 모델이라 이 문제에 더 강하다.
-이미지가 1장이면 `flux-pro/kontext`, 여러 장이면 `flux-pro/kontext/multi` 로 나간다.
-Kontext에는 `aspect_ratio` 를 보내지 않는다. 비율을 지정하면 구도를 다시 잡으면서 얼굴도 다시 그린다.
+**얼굴이 흔들리면 모델을 바꿔본다.** 프롬프트로 잠가도 모델이 이미지 전체를 다시 합성하면
+얼굴은 조금씩 달라진다. 모델 선택이 프롬프트보다 큰 변수다.
+
+- **Seedream 5 Pro** (기본) — 한 부분만 바꾸고 나머지 화면은 그대로 두도록 만들어진 모델
+- **Seedream 4.5** — 생성과 편집을 한 모델로 처리한다. 장당 약 $0.04
+- **FLUX Kontext** — 국소 편집 전용. 이미지 1장이면 `flux-pro/kontext`,
+  여러 장이면 `flux-pro/kontext/multi` 로 나간다
+
+**편집 경로에는 비율을 보내지 않는다.** 원본과 다른 비율을 지정하면 구도를 다시 잡으면서
+얼굴까지 다시 그린다. 그래서 참조 이미지가 붙으면 화면의 비율 선택은 무시하고
+`auto_2K`(Seedream) 로 보낸다. Kontext에는 `aspect_ratio` 자체를 보내지 않는다.
+
+> `image_size` 값은 버전마다 다르다. v4에는 `auto` 가 있었지만 v4.5부터 사라져
+> `auto_2K` 를 쓴다. 틀리면 422가 난다.
 
 Image Gen에서 참조 이미지를 넣으면 Seedream과 Nano Banana는 편집 엔드포인트로 자동 전환된다.
 FLUX schnell은 참조를 받지 않으며, 참조가 올라와 있으면 화면이 그 사실을 알린다.
@@ -200,8 +209,11 @@ public/
 [`src/lib/falModels.ts`](src/lib/falModels.ts) 안의 상수다. fal 엔드포인트 ID는 바뀔 수 있다.
 
 ```ts
-const SEEDREAM_T2I  = 'fal-ai/bytedance/seedream/v4/text-to-image';
-const SEEDREAM_EDIT = 'fal-ai/bytedance/seedream/v4/edit';
+// Seedream 5 Pro 는 fal-ai/ 접두어가 없다
+'bytedance/seedream/v5/pro/text-to-image'
+'bytedance/seedream/v5/pro/edit'
+'fal-ai/bytedance/seedream/v4.5/text-to-image'
+'fal-ai/bytedance/seedream/v4.5/edit'
 const NANO_T2I      = 'fal-ai/nano-banana';
 const NANO_EDIT     = 'fal-ai/nano-banana/edit';
 const FLUX_SCHNELL  = 'fal-ai/flux/schnell';

@@ -95,6 +95,12 @@ export default function ImageGen({
             </Chip>
           ))}
         </div>
+        {state.refs.length > 0 && model.acceptsImages && (
+          <p className="mt-2 text-xs leading-relaxed text-muted">
+            참조 이미지가 있으면 편집으로 동작해서 원본 비율을 그대로 따릅니다. 비율을
+            바꾸면 구도를 다시 잡으면서 얼굴까지 다시 그려지기 때문입니다.
+          </p>
+        )}
       </div>
 
       <Card>
