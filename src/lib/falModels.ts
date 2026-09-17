@@ -32,6 +32,8 @@ export type FalModel = {
   kind: ModelKind;
   /** 참조·대상 이미지를 받을 수 있는지. false면 이미지를 무시한다. */
   acceptsImages: boolean;
+  /** 이미지 없이는 동작하지 않는지. 편집 전용 모델이 여기 해당한다. */
+  requiresImages?: boolean;
   resolve(input: ModelInput): FalRequest;
 };
 
@@ -60,6 +62,8 @@ const SEEDREAM_EDIT = 'fal-ai/bytedance/seedream/v4/edit';
 const NANO_T2I = 'fal-ai/nano-banana';
 const NANO_EDIT = 'fal-ai/nano-banana/edit';
 const FLUX_SCHNELL = 'fal-ai/flux/schnell';
+const KONTEXT_SINGLE = 'fal-ai/flux-pro/kontext';
+const KONTEXT_MULTI = 'fal-ai/flux-pro/kontext/multi';
 
 /** 이미지가 붙으면 edit 엔드포인트로 간다. Seedream은 참조를 10장까지 받는다. */
 const seedream = (kind: ModelKind): FalModel => ({
@@ -67,7 +71,7 @@ const seedream = (kind: ModelKind): FalModel => ({
   label: 'Seedream 4',
   note:
     kind === 'edit'
-      ? '참조 이미지를 최대 10장까지 받는다. 여러 얼굴을 한 번에 다룰 때 유리하다.'
+      ? '참조 이미지를 최대 10장까지 받는다. 여러 얼굴을 한 번에 다룰 때 유리하지만, 전체를 다시 합성해서 얼굴이 조금씩 흔들릴 수 있다.'
       : '균형이 좋아 기본값으로 둔다. 참조 이미지를 넣으면 편집 엔드포인트로 자동 전환된다.',
   kind,
   acceptsImages: true,
@@ -90,7 +94,7 @@ const nanoBanana = (kind: ModelKind): FalModel => ({
   label: 'Nano Banana',
   note:
     kind === 'edit'
-      ? '보존 지시를 잘 지킨다. 얼굴을 유지한 채 배경이나 옷만 바꿀 때 시도해볼 만하다.'
+      ? '지시를 비교적 잘 따른다. Kontext로도 잘 안 되면 시도해볼 만하다.'
       : 'Google Gemini 이미지 모델을 fal 경유로 부른다. 지시를 잘 따르는 편이다.',
   kind,
   acceptsImages: true,
@@ -118,10 +122,39 @@ const nanoBanana = (kind: ModelKind): FalModel => ({
         },
 });
 
+/**
+ * 국소 편집 전용 모델.
+ *
+ * 전체를 다시 합성하지 않고 지시한 부분만 고치도록 만들어져서,
+ * "옷만 바꿨는데 얼굴이 달라지는" 문제에 가장 먼저 시도해볼 선택지다.
+ * 대신 이미지가 없으면 동작하지 않는다.
+ *
+ * aspect_ratio는 보내지 않는다. 비율을 지정하면 구도를 다시 잡으면서 얼굴도 다시 그린다.
+ */
+const kontext = (kind: ModelKind): FalModel => ({
+  key: kind === 'edit' ? KONTEXT_MULTI : KONTEXT_SINGLE,
+  label: 'FLUX Kontext',
+  note: '지시한 부분만 고치도록 만들어진 편집 전용 모델. 얼굴이 흔들리면 먼저 이쪽으로 바꿔본다. 참조 이미지가 반드시 필요하다.',
+  kind,
+  acceptsImages: true,
+  requiresImages: true,
+  resolve: ({ prompt, images }) =>
+    images.length > 1
+      ? {
+          id: KONTEXT_MULTI,
+          body: { prompt, image_urls: images, num_images: 1, output_format: 'png' },
+        }
+      : {
+          id: KONTEXT_SINGLE,
+          body: { prompt, image_url: images[0], num_images: 1, output_format: 'png' },
+        },
+});
+
 /** 텍스트로 새 이미지를 만드는 모델. 첫 항목이 기본값이다. */
 export const GENERATE_MODELS: FalModel[] = [
   seedream('generate'),
   nanoBanana('generate'),
+  kontext('generate'),
   {
     key: FLUX_SCHNELL,
     label: 'FLUX schnell',
@@ -142,7 +175,11 @@ export const GENERATE_MODELS: FalModel[] = [
 ];
 
 /** 사진을 받아 편집하는 모델. Single / Multi Swap이 쓴다. 첫 항목이 기본값이다. */
-export const EDIT_MODELS: FalModel[] = [seedream('edit'), nanoBanana('edit')];
+export const EDIT_MODELS: FalModel[] = [
+  seedream('edit'),
+  kontext('edit'),
+  nanoBanana('edit'),
+];
 
 export function findModel(models: FalModel[], key: string): FalModel {
   return models.find((m) => m.key === key) ?? models[0];

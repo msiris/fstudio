@@ -110,8 +110,14 @@ API 스코프 키로 부르면 401이 돌아오고, 그 사정을 키 패널에�
 
 | 모드 | 고를 수 있는 모델 |
 |---|---|
-| Image Gen | **Seedream 4** · Nano Banana · FLUX schnell |
-| Single / Multi Swap | **Seedream 4 Edit** · Nano Banana Edit |
+| Image Gen | **Seedream 4** · Nano Banana · FLUX Kontext · FLUX schnell |
+| Single / Multi Swap | **Seedream 4 Edit** · FLUX Kontext · Nano Banana Edit |
+
+**얼굴이 흔들리면 FLUX Kontext로 바꿔본다.** Seedream과 Nano Banana는 이미지 전체를
+다시 합성하는 방식이라, 프롬프트로 아무리 잠가도 얼굴이 조금씩 달라질 수 있다.
+Kontext는 국소 편집 전용으로 만들어진 모델이라 이 문제에 더 강하다.
+이미지가 1장이면 `flux-pro/kontext`, 여러 장이면 `flux-pro/kontext/multi` 로 나간다.
+Kontext에는 `aspect_ratio` 를 보내지 않는다. 비율을 지정하면 구도를 다시 잡으면서 얼굴도 다시 그린다.
 
 Image Gen에서 참조 이미지를 넣으면 Seedream과 Nano Banana는 편집 엔드포인트로 자동 전환된다.
 FLUX schnell은 참조를 받지 않으며, 참조가 올라와 있으면 화면이 그 사실을 알린다.
@@ -199,6 +205,8 @@ const SEEDREAM_EDIT = 'fal-ai/bytedance/seedream/v4/edit';
 const NANO_T2I      = 'fal-ai/nano-banana';
 const NANO_EDIT     = 'fal-ai/nano-banana/edit';
 const FLUX_SCHNELL  = 'fal-ai/flux/schnell';
+const KONTEXT_SINGLE = 'fal-ai/flux-pro/kontext';
+const KONTEXT_MULTI  = 'fal-ai/flux-pro/kontext/multi';
 ```
 
 404가 나면 ID를, 422가 나면 `resolve`의 입력 스키마를 모델 페이지와 맞춘다.

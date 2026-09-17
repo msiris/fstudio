@@ -24,6 +24,8 @@ export default function ImageGen({
   apiKey: string;
 }) {
   const model = findModel(GENERATE_MODELS, state.model);
+  // 편집 전용 모델은 참조 이미지가 없으면 호출 자체가 성립하지 않는다.
+  const needsRefs = Boolean(model.requiresImages) && state.refs.length === 0;
 
   const addRef = (value: string | null) => {
     if (!value) return;
@@ -123,6 +125,12 @@ export default function ImageGen({
             골라주세요.
           </p>
         )}
+        {needsRefs && (
+          <p className="mt-3 text-xs leading-relaxed text-muted">
+            {model.label}은 편집 전용이라 이미지가 있어야 합니다. 고칠 사진을 올리거나 다른
+            모델을 골라주세요.
+          </p>
+        )}
       </Card>
 
       {state.refs.length > 0 && model.acceptsImages && (
@@ -136,7 +144,7 @@ export default function ImageGen({
       )}
 
       <PrimaryButton
-        disabled={!state.prompt.trim()}
+        disabled={!state.prompt.trim() || needsRefs}
         busy={state.busy}
         onClick={() => void generate()}
       >
