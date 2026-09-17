@@ -1,7 +1,7 @@
 # Face Studio
 
 얼굴 편집과 이미지 생성을 한 화면에서 다루는 개인용 웹앱.
-서버 없이 브라우저에서 fal.ai를 직접 호출한다. 한글 프롬프트는 Gemini로 영어로 옮긴 뒤 보낸다.
+서버 없이 브라우저에서 fal.ai를 직접 호출한다.
 
 **배포 주소 — https://msiris.github.io/fstudio/**
 
@@ -41,77 +41,56 @@ npm run dev
 ## 동작 방식
 
 ```
-한글 입력 → Gemini 2.5 Flash 로 영어 변환 (무료)
-         → 프롬프트 레이어에서 화질·구도·보존 지시 덧붙임
-         → fal.ai 선택 모델 호출 (유료)
-         → 결과 data URI
+입력 → 프롬프트 레이어에서 범위 잠금·화질·구도 지시를 덧붙임
+     → fal.ai 선택 모델 호출
+     → 결과 data URI
 ```
 
-영어로 입력하면 변환 단계를 건너뛴다. Gemini 키가 없으면 한국어를 그대로 보내고 그 사실을 알린다.
+한글로 써도 된다. 프롬프트 레이어가 "이 지시는 한국어다"라고 모델에 알려준다.
+영어로 쓰면 더 정확하게 나오는 경우가 많다.
 
 ## 비용
 
 **이미지 생성은 유료다.** fal.ai는 선불 크레딧을 충전해 쓰는 pay-per-use 방식이다.
 모델마다 단가가 다르니 [fal.ai/pricing](https://fal.ai/pricing) 에서 확인한다.
 
-한글→영어 변환에 쓰는 `gemini-2.5-flash` 는 무료 티어로 처리돼 비용이 붙지 않는다.
-
 > Gemini API의 이미지 생성 모델(Nano Banana, Imagen, Veo)은 Free Tier가 "Not available" 이다.
 > 그래서 이미지 쪽을 fal.ai로 옮겼다. Nano Banana 자체는 fal 경유로 계속 쓸 수 있다.
 
 ## API 키
 
-키는 두 개다. **홈 화면에 입력칸이 있고**, 모드 화면에서는 우측 상단 열쇠 버튼으로 연다.
-저장 버튼은 없다. 입력하는 즉시 저장된다.
+**키는 하나다.** [fal.ai/dashboard/keys](https://fal.ai/dashboard/keys) 에서
+**ADMIN 스코프**로 발급한다. ADMIN은 API 스코프를 포함하므로 이 키 하나로
+이미지 생성과 잔액 조회가 모두 된다.
 
-| 키 | 용도 | 필수 | 발급 |
-|---|---|---|---|
-| fal.ai | 이미지 생성·편집 + 잔액 조회 | **필수** | [fal.ai/dashboard/keys](https://fal.ai/dashboard/keys) |
-| fal.ai ADMIN | 잔액 조회만 따로 쓸 때 | 선택 | 같은 곳 |
-| Google AI Studio | 한글→영어 변환 | 선택 | [aistudio.google.com/apikey](https://aistudio.google.com/apikey) |
+홈 화면 **우측 상단 열쇠 버튼**을 누르면 입력칸이 나온다. 저장 버튼은 없고 입력하는 즉시 저장된다.
+한 번 넣으면 세 모드가 모두 그 키를 쓴다. 모드 화면에는 키 입력이 없다.
 
-**fal 키는 하나면 된다.** ADMIN 스코프는 API 스코프를 포함하므로, ADMIN으로 발급해
-첫 칸에 넣으면 이미지 생성과 잔액 조회가 모두 된다.
-
-두 번째 칸은 스코프를 나눠 쓰고 싶을 때만 쓴다. 생성에는 권한이 좁은 API 키를 쓰고
-잔액만 ADMIN 키로 보고 싶은 경우다. 비워두면 첫 칸의 키로 조회한다.
-
-fal 키는 크레딧을 충전해야 호출된다. Gemini 키는 없어도 동작하지만 한국어 프롬프트 품질이 떨어진다.
-
-두 키 모두 이 브라우저의 `localStorage`에만 저장된다
-(`face-studio:fal-api-key`, `face-studio:gemini-api-key`).
-소스, 커밋, 빌드 결과 어디에도 들어가지 않는다. 공용 PC에서는 키 패널의 휴지통 버튼으로 지우고 나온다.
+키는 이 브라우저의 `localStorage`(`face-studio:fal-api-key`)에만 저장된다.
+소스, 커밋, 빌드 결과 어디에도 들어가지 않는다. 공용 PC에서는 휴지통 버튼으로 지우고 나온다.
 
 > 키를 환경변수(`VITE_*`)로 넣지 말 것. Vite는 그 값을 빌드 결과에 그대로 박아넣기 때문에
 > 빌드물을 공개 배포하면 키가 노출된다. 그래서 이 앱은 화면에서만 키를 받는다.
 >
-> fal 공식 문서는 브라우저에 `FAL_KEY` 노출을 금지하고 프록시를 권한다. 공개 서비스 기준의 경고이고,
-> 이 앱은 키가 본인 브라우저에만 있는 개인용이다. 다만 fal 키는 충전한 크레딧에 직접 접근하는
-> 자격증명이므로 소액만 충전해두는 편이 안전하다.
+> ADMIN 키는 배포와 앱 관리 권한까지 가진다. 그 권한을 브라우저에 두는 것이 이 앱의 전제다.
+> 개인 기기에서만 쓰고, 크레딧은 소액만 충전해두는 편이 안전하다.
 
 ### 크레딧 잔액
 
-홈 화면이 fal 잔액을 보여준다.
+홈 화면 우측 상단에 남은 크레딧이 숫자로 뜬다. 누르면 다시 조회한다.
 
 ```
 GET https://api.fal.ai/v1/account/billing?expand=credits
-Authorization: Key {FAL_ADMIN_KEY}
+Authorization: Key {FAL_KEY}
 ```
-
-> 이 엔드포인트는 **ADMIN 스코프**만 받는다. API 스코프 키로 부르면 401이 돌아온다.
-> 반대로 ADMIN은 API를 포함하므로 **ADMIN 키 하나로 생성과 잔액 조회가 모두 된다.**
->
-> 다만 ADMIN 키는 배포와 앱 관리 권한까지 가진다. 그 권한을 브라우저에 두기 싫으면
-> 생성용 API 키를 첫 칸에, ADMIN 키를 두 번째 칸에 나눠 넣으면 된다.
-
-응답은 이렇게 온다.
 
 ```json
 { "username": "my-team", "credits": { "current_balance": 24.5, "currency": "USD" } }
 ```
 
-키를 넣으면 자동으로 조회하고(입력 중에는 0.8초 기다린다), 새로고침 버튼으로 다시 부를 수 있다.
-`current_balance` 가 남은 크레딧이고 단위는 달러다.
+`current_balance` 가 남은 크레딧이고 단위는 달러다. 이 엔드포인트는 **ADMIN 스코프만 받는다.**
+API 스코프 키로 부르면 401이 돌아오고, 그 사정을 키 패널에서 알려준다.
+
 [`src/lib/falAccount.ts`](src/lib/falAccount.ts) 는 위 구조를 먼저 보고, 어긋나면
 `balance` / `remaining` 같은 이름의 숫자를 찾아 들어간다. 그래도 못 찾으면 응답 원문을 펼쳐 보여준다.
 
@@ -181,12 +160,12 @@ src/
 │  ├─ prompt.ts          ★ 프롬프트 레이어. 결과 품질의 대부분이 여기서 결정된다
 │  ├─ falModels.ts       ★ 모델 레지스트리. 모델을 추가하려면 여기만 고친다
 │  ├─ fal.ts             callFal 단일 호출 함수, 오류 문구
-│  ├─ falAccount.ts      크레딧 잔액 조회
-│  ├─ gemini.ts          한글→영어 변환 전용
+│  ├─ falAccount.ts      크레딧 잔액 조회 (ADMIN 스코프 필요)
 │  ├─ run.ts             세 모드 공용 실행 흐름
 │  ├─ image.ts           업로드 검사(jpg/png/webp, 10MB), data URL 변환
-│  └─ keyStore.ts        API 키 두 개 저장
-├─ components/           Card, ImageDrop, Chip, ModelPicker, CreditBalance 등
+│  └─ keyStore.ts        API 키 저장
+├─ components/           Card, ImageDrop, Chip, ModelPicker, CreditBadge 등
+├─ hooks/                useCredits — 잔액 조회 상태
 └─ screens/              Home, SingleSwap, MultiSwap, ImageGen
 
 public/
@@ -199,7 +178,7 @@ public/
 
 `src/lib/prompt.ts` 는 UI 코드와 섞지 않는다. 결과가 마음에 안 들면 이 파일만 본다.
 
-- 한글 입력은 `gemini-2.5-flash` 로 영어 변환한 뒤 보낸다. 변환 실패 시 원문으로 진행하고 그 사실을 알린다
+- 한글이 섞여 있으면 "이 지시는 한국어다"라고 모델에 알린다
 - 화질 수식어(조명·초점·디테일)를 기본으로 덧붙인다
 - 비율이 Original이 아니면 구도 힌트를 넣는다
 - 범위 잠금이 켜지면 `SCOPE_LOCK` + `FACE_LOCK` 문단을 넣는다. 뭉뚱그리면 모델이 알아서 해석하므로

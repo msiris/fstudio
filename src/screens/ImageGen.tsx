@@ -10,7 +10,6 @@ import Toggle from '../components/Toggle';
 import { FOCUS_RING } from '../components/ui';
 import { MAX_REFERENCES, RATIOS } from '../constants';
 import { findModel, GENERATE_MODELS } from '../lib/falModels';
-import type { ApiKeys } from '../lib/keyStore';
 import { buildGenerationPrompt } from '../lib/prompt';
 import { runImageRequest } from '../lib/run';
 import type { GenState } from '../state';
@@ -18,11 +17,11 @@ import type { GenState } from '../state';
 export default function ImageGen({
   state,
   onChange,
-  keys,
+  apiKey,
 }: {
   state: GenState;
   onChange: (next: Partial<GenState>) => void;
-  keys: ApiKeys;
+  apiKey: string;
 }) {
   const model = findModel(GENERATE_MODELS, state.model);
 
@@ -39,9 +38,9 @@ export default function ImageGen({
     const raw = state.prompt.trim();
     if (!raw || state.busy) return;
 
-    if (!keys.fal.trim()) {
+    if (!apiKey.trim()) {
       onChange({
-        note: '우측 상단 키 버튼을 눌러 fal.ai 키를 먼저 넣어주세요. fal.ai/dashboard/keys 에서 발급합니다.',
+        note: '홈 화면 우측 상단 열쇠 버튼에서 fal 키를 먼저 넣어주세요. fal.ai/dashboard/keys 에서 ADMIN 스코프로 발급합니다.',
       });
       return;
     }
@@ -53,8 +52,7 @@ export default function ImageGen({
       images: state.refs,
       ratio: state.ratio,
       model,
-      falKey: keys.fal,
-      geminiKey: keys.gemini,
+      falKey: apiKey,
       // 참조를 못 받는 모델에는 "참조가 첨부됐다"고 말하지 않는다.
       build: (text) =>
         buildGenerationPrompt(text, state.ratio, {

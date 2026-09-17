@@ -6,18 +6,7 @@
  * 공용 PC에서 쓸 때는 키 패널의 휴지통 버튼으로 지우고 나온다.
  */
 
-/**
- * fal — 이미지 생성·편집 (API 스코프)
- * falAdmin — 크레딧 잔액 조회 (ADMIN 스코프). 잔액을 안 볼 거면 넣지 않아도 된다
- * gemini — 한글→영어 변환
- */
-export type KeyName = 'fal' | 'falAdmin' | 'gemini';
-
-const STORAGE_KEY: Record<KeyName, string> = {
-  fal: 'face-studio:fal-api-key',
-  falAdmin: 'face-studio:fal-admin-key',
-  gemini: 'face-studio:gemini-api-key',
-};
+const STORAGE_KEY = 'face-studio:fal-api-key';
 
 /** 시크릿 모드나 저장소 차단 환경에서는 접근 자체가 예외를 던진다. */
 function safeStorage(): Storage | null {
@@ -31,27 +20,20 @@ function safeStorage(): Storage | null {
   }
 }
 
-export type ApiKeys = Record<KeyName, string>;
-
-export function loadApiKeys(): ApiKeys {
-  const store = safeStorage();
-  return {
-    fal: store?.getItem(STORAGE_KEY.fal) ?? '',
-    falAdmin: store?.getItem(STORAGE_KEY.falAdmin) ?? '',
-    gemini: store?.getItem(STORAGE_KEY.gemini) ?? '',
-  };
+export function loadApiKey(): string {
+  return safeStorage()?.getItem(STORAGE_KEY) ?? '';
 }
 
 /** 빈 문자열이면 저장 대신 삭제한다. */
-export function saveApiKey(name: KeyName, key: string): void {
+export function saveApiKey(key: string): void {
   const store = safeStorage();
   if (!store) return;
-  if (key.trim()) store.setItem(STORAGE_KEY[name], key.trim());
-  else store.removeItem(STORAGE_KEY[name]);
+  if (key.trim()) store.setItem(STORAGE_KEY, key.trim());
+  else store.removeItem(STORAGE_KEY);
 }
 
-export function clearApiKey(name: KeyName): void {
-  safeStorage()?.removeItem(STORAGE_KEY[name]);
+export function clearApiKey(): void {
+  safeStorage()?.removeItem(STORAGE_KEY);
 }
 
 /** 저장 자체가 불가능한 환경인지. 안내 문구를 바꾸는 데 쓴다. */

@@ -9,7 +9,6 @@ import SectionLabel from '../components/SectionLabel';
 import Toggle from '../components/Toggle';
 import { SINGLE_PRESETS } from '../constants';
 import { EDIT_MODELS, findModel } from '../lib/falModels';
-import type { ApiKeys } from '../lib/keyStore';
 import { buildEditPrompt } from '../lib/prompt';
 import { runImageRequest } from '../lib/run';
 import type { SingleState } from '../state';
@@ -17,11 +16,11 @@ import type { SingleState } from '../state';
 export default function SingleSwap({
   state,
   onChange,
-  keys,
+  apiKey,
 }: {
   state: SingleState;
   onChange: (next: Partial<SingleState>) => void;
-  keys: ApiKeys;
+  apiKey: string;
 }) {
   const model = findModel(EDIT_MODELS, state.model);
   const instruction = state.instruction.trim();
@@ -30,9 +29,9 @@ export default function SingleSwap({
   const run = async () => {
     if (!ready || state.busy) return;
 
-    if (!keys.fal.trim()) {
+    if (!apiKey.trim()) {
       onChange({
-        note: '우측 상단 키 버튼을 눌러 fal.ai 키를 먼저 넣어주세요. fal.ai/dashboard/keys 에서 발급합니다.',
+        note: '홈 화면 우측 상단 열쇠 버튼에서 fal 키를 먼저 넣어주세요. fal.ai/dashboard/keys 에서 ADMIN 스코프로 발급합니다.',
       });
       return;
     }
@@ -48,8 +47,7 @@ export default function SingleSwap({
       images,
       ratio: 'Original',
       model,
-      falKey: keys.fal,
-      geminiKey: keys.gemini,
+      falKey: apiKey,
       build: (text) =>
         buildEditPrompt(text, {
           referenceFaces,

@@ -10,7 +10,6 @@ import SectionLabel from '../components/SectionLabel';
 import Toggle from '../components/Toggle';
 import { FACE_COUNTS, MULTI_PRESETS } from '../constants';
 import { EDIT_MODELS, findModel } from '../lib/falModels';
-import type { ApiKeys } from '../lib/keyStore';
 import { buildEditPrompt } from '../lib/prompt';
 import { runImageRequest } from '../lib/run';
 import type { MultiState } from '../state';
@@ -19,11 +18,11 @@ import type { ImageValue } from '../types';
 export default function MultiSwap({
   state,
   onChange,
-  keys,
+  apiKey,
 }: {
   state: MultiState;
   onChange: (next: Partial<MultiState>) => void;
-  keys: ApiKeys;
+  apiKey: string;
 }) {
   const model = findModel(EDIT_MODELS, state.model);
 
@@ -46,9 +45,9 @@ export default function MultiSwap({
   const run = async () => {
     if (!ready || state.busy) return;
 
-    if (!keys.fal.trim()) {
+    if (!apiKey.trim()) {
       onChange({
-        note: '우측 상단 키 버튼을 눌러 fal.ai 키를 먼저 넣어주세요. fal.ai/dashboard/keys 에서 발급합니다.',
+        note: '홈 화면 우측 상단 열쇠 버튼에서 fal 키를 먼저 넣어주세요. fal.ai/dashboard/keys 에서 ADMIN 스코프로 발급합니다.',
       });
       return;
     }
@@ -60,8 +59,7 @@ export default function MultiSwap({
       images: [state.target as string, ...usedFaces],
       ratio: 'Original',
       model,
-      falKey: keys.fal,
-      geminiKey: keys.gemini,
+      falKey: apiKey,
       build: (text) =>
         buildEditPrompt(text, {
           referenceFaces: usedFaces.length,
