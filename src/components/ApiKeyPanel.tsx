@@ -5,11 +5,13 @@ import { STORAGE_AVAILABLE, type ApiKeys, type KeyName } from '../lib/keyStore';
 import { FOCUS_RING } from './ui';
 
 /**
- * 키 두 개를 받는다.
- * fal — 이미지 생성·편집. 없으면 아무것도 만들 수 없다.
+ * 키 세 개를 받는다.
+ * fal (API 스코프) — 이미지 생성·편집. 없으면 아무것도 만들 수 없다.
+ * fal (ADMIN 스코프) — 크레딧 잔액 조회 전용. fal이 이 엔드포인트를 ADMIN으로만 열어둬서
+ *   위의 키로는 부를 수 없다. 잔액을 안 볼 거면 비워둔다.
  * Gemini — 한글을 영어로 옮기는 용도. 없어도 동작하지만 품질이 떨어진다.
  *
- * 둘 다 이 브라우저의 localStorage에만 저장된다.
+ * 셋 다 이 브라우저의 localStorage에만 저장된다.
  * 소스·커밋·빌드 결과 어디에도 들어가지 않는다.
  */
 
@@ -83,6 +85,15 @@ export default function ApiKeyPanel({
         />
 
         <KeyField
+          label="fal.ai ADMIN — 잔액 조회 (선택)"
+          placeholder="키 ID:시크릿"
+          value={keys.falAdmin}
+          onChange={(v) => onChange('falAdmin', v)}
+          onClear={() => onClear('falAdmin')}
+          hint="잔액 조회는 ADMIN 스코프 키만 받습니다. 위의 키로는 거부됩니다. 잔액을 안 볼 거면 비워두세요 — ADMIN 키는 배포와 앱 관리 권한까지 가집니다."
+        />
+
+        <KeyField
           label="Google AI Studio — 한글 번역 (선택)"
           placeholder="AIza..."
           value={keys.gemini}
@@ -94,7 +105,7 @@ export default function ApiKeyPanel({
 
       <p className="mt-4 border-t border-line pt-3 text-xs leading-relaxed text-muted">
         {STORAGE_AVAILABLE
-          ? '두 키 모두 이 브라우저에만 저장되며 소스나 커밋에는 들어가지 않습니다. 공용 PC에서는 휴지통 버튼으로 지우고 나오세요.'
+          ? '키는 모두 이 브라우저에만 저장되며 소스나 커밋에는 들어가지 않습니다. 공용 PC에서는 휴지통 버튼으로 지우고 나오세요.'
           : '이 브라우저는 저장을 막고 있어 새로고침하면 키가 사라집니다.'}
       </p>
     </Card>

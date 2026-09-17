@@ -50,7 +50,7 @@ export default function Home({
       </div>
 
       <div className="space-y-4">
-        <CreditBalance apiKey={keys.fal} />
+        <CreditBalance apiKey={keys.falAdmin} />
         <ApiKeyPanel keys={keys} onChange={onChangeKey} onClear={onClearKey} />
       </div>
 

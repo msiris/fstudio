@@ -64,10 +64,11 @@ npm run dev
 키는 두 개다. **홈 화면에 입력칸이 있고**, 모드 화면에서는 우측 상단 열쇠 버튼으로 연다.
 저장 버튼은 없다. 입력하는 즉시 저장된다.
 
-| 키 | 용도 | 필수 | 발급 |
-|---|---|---|---|
-| fal.ai | 이미지 생성·편집 | **필수** | [fal.ai/dashboard/keys](https://fal.ai/dashboard/keys) |
-| Google AI Studio | 한글→영어 변환 | 선택 | [aistudio.google.com/apikey](https://aistudio.google.com/apikey) |
+| 키 | 스코프 | 용도 | 필수 | 발급 |
+|---|---|---|---|---|
+| fal.ai | **API** | 이미지 생성·편집 | **필수** | [fal.ai/dashboard/keys](https://fal.ai/dashboard/keys) |
+| fal.ai | **ADMIN** | 크레딧 잔액 조회 | 선택 | 같은 곳에서 스코프만 ADMIN으로 |
+| Google AI Studio | — | 한글→영어 변환 | 선택 | [aistudio.google.com/apikey](https://aistudio.google.com/apikey) |
 
 fal 키는 크레딧을 충전해야 호출된다. Gemini 키는 없어도 동작하지만 한국어 프롬프트 품질이 떨어진다.
 
@@ -84,19 +85,28 @@ fal 키는 크레딧을 충전해야 호출된다. Gemini 키는 없어도 동�
 
 ### 크레딧 잔액
 
-홈 화면이 fal 잔액을 보여준다. **이미지 호출과 같은 키, 같은 헤더**를 쓰므로 별도 발급이 필요 없다.
+홈 화면이 fal 잔액을 보여준다.
 
 ```
 GET https://api.fal.ai/v1/account/billing?expand=credits
-Authorization: Key {FAL_KEY}
+Authorization: Key {FAL_ADMIN_KEY}
+```
+
+> **이미지 생성용 키로는 부를 수 없다.** fal은 이 엔드포인트를 **ADMIN 스코프**로만 열어둬서,
+> 모델 호출용 API 스코프 키로 부르면 401이 돌아온다. 같은 계정이어도 스코프가 다르면 거부된다.
+> 그래서 잔액 조회용 키를 따로 받는다.
+>
+> ADMIN 키는 배포와 앱 관리 권한까지 가진다. 잔액을 굳이 볼 필요가 없으면 넣지 않는 편이 안전하다.
+
+응답은 이렇게 온다.
+
+```json
+{ "username": "my-team", "credits": { "current_balance": 24.5, "currency": "USD" } }
 ```
 
 키를 넣으면 자동으로 조회하고(입력 중에는 0.8초 기다린다), 새로고침 버튼으로 다시 부를 수 있다.
-
-응답 구조를 문서로 확정하지 못해 [`src/lib/falAccount.ts`](src/lib/falAccount.ts) 가
-`balance` / `credits` / `remaining` 같은 이름의 숫자를 찾아 들어간다.
-못 찾으면 그 사실을 알리고 응답 원문을 그대로 펼쳐 보여준다. 어느 값이 잔액인지 눈으로 확인하고
-파서를 고치면 된다.
+[`src/lib/falAccount.ts`](src/lib/falAccount.ts) 는 위 구조를 먼저 보고, 어긋나면
+`balance` / `remaining` 같은 이름의 숫자를 찾아 들어간다. 그래도 못 찾으면 응답 원문을 펼쳐 보여준다.
 
 업로드한 이미지와 생성 결과는 메모리에만 있다. 새로고침하면 사라진다.
 

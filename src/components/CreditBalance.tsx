@@ -14,7 +14,18 @@ type Status =
   | { kind: 'ok'; data: CreditsResult }
   | { kind: 'error'; message: string };
 
-function formatBalance(value: number): string {
+function formatBalance(value: number, currency: string | null): string {
+  if (currency && /^[A-Z]{3}$/.test(currency)) {
+    try {
+      return value.toLocaleString('ko-KR', {
+        style: 'currency',
+        currency,
+        maximumFractionDigits: 4,
+      });
+    } catch {
+      // 알 수 없는 통화 코드면 숫자만 보여준다.
+    }
+  }
   return value.toLocaleString('ko-KR', { maximumFractionDigits: 4 });
 }
 
@@ -78,7 +89,8 @@ export default function CreditBalance({ apiKey }: { apiKey: string }) {
 
       {status.kind === 'idle' && (
         <p className="text-xs leading-relaxed text-muted">
-          아래에 fal 키를 넣으면 남은 크레딧을 보여줍니다.
+          아래 ADMIN 칸에 fal ADMIN 키를 넣으면 남은 크레딧을 보여줍니다. 이미지 생성용
+          키와는 다른 키입니다.
         </p>
       )}
 
@@ -93,9 +105,14 @@ export default function CreditBalance({ apiKey }: { apiKey: string }) {
       {status.kind === 'ok' && (
         <>
           {status.data.balance !== null ? (
-            <div className="text-2xl font-bold tabular-nums text-text">
-              {formatBalance(status.data.balance)}
-            </div>
+            <>
+              <div className="text-2xl font-bold tabular-nums text-text">
+                {formatBalance(status.data.balance, status.data.currency)}
+              </div>
+              {status.data.username && (
+                <p className="mt-1 text-xs text-muted">{status.data.username}</p>
+              )}
+            </>
           ) : (
             <p className="text-xs leading-relaxed text-muted">
               응답에서 잔액 항목을 찾지 못했습니다. 아래 원문을 열어 어느 값이 잔액인지

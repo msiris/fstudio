@@ -1,7 +1,10 @@
 /**
  * fal 계정 정보 조회.
  *
- * 이미지 호출과 같은 키, 같은 Authorization 헤더를 쓴다. 별도 발급이 필요 없다.
+ * 주의 — 이 엔드포인트는 ADMIN 스코프 키를 요구한다.
+ * 모델 호출에 쓰는 API 스코프 키로 부르면 401이 돌아온다. 같은 계정이어도 스코프가 다르면 거부된다.
+ * 그래서 앱은 잔액 조회용 키를 따로 받는다.
+ *
  * api.fal.ai도 CORS를 열어두고 있어 서버 없이 브라우저에서 직접 부른다.
  */
 
@@ -13,12 +16,20 @@ export class FalAccountError extends Error {}
 export type CreditsResult = {
   /** 응답에서 찾아낸 잔액. 구조가 바뀌면 null이 된다. */
   balance: number | null;
+  /** 통화 코드. 없으면 null. */
+  currency: string | null;
+  /** 계정 이름. 어느 계정을 보고 있는지 확인용. */
+  username: string | null;
   /** 잔액 확인용 원문. 파싱이 어긋났을 때 화면에서 직접 볼 수 있어야 한다. */
   raw: string;
 };
 
-/** 잔액으로 볼 만한 필드 이름. fal이 구조를 바꿔도 대개 이 중 하나에 걸린다. */
-const BALANCE_KEY = /^(balance|credits?|credit_balance|remaining|available|amount)$/i;
+/**
+ * 잔액으로 볼 만한 필드 이름. 문서상 구조는 credits.current_balance 이고,
+ * 그게 어긋났을 때를 대비해 비슷한 이름도 함께 훑는다.
+ */
+const BALANCE_KEY =
+  /^(current_balance|balance|credits?|credit_balance|remaining|available|amount)$/i;
 
 function toNumber(value: unknown): number | null {
   if (typeof value === 'number' && Number.isFinite(value)) return value;
@@ -77,7 +88,10 @@ export async function fetchCredits(apiKey: string): Promise<CreditsResult> {
 
   if (!res.ok) {
     if (res.status === 401 || res.status === 403) {
-      throw new FalAccountError('키가 거부되었습니다. fal 키를 다시 확인해주세요.');
+      // 모델 호출용 키로는 여기를 부를 수 없다. 가장 흔한 원인이라 먼저 짚어준다.
+      throw new FalAccountError(
+        '이 키로는 잔액을 볼 수 없습니다. 잔액 조회는 ADMIN 스코프 키를 요구하고, 모델 호출용 API 스코프 키는 거부됩니다. fal.ai/dashboard/keys 에서 ADMIN 스코프로 키를 하나 더 만들어 아래 ADMIN 칸에 넣어주세요.',
+      );
     }
     throw new FalAccountError(`잔액 조회에 실패했습니다 (${res.status}).`);
   }
@@ -89,8 +103,14 @@ export async function fetchCredits(apiKey: string): Promise<CreditsResult> {
     throw new FalAccountError('잔액 응답을 해석하지 못했습니다.');
   }
 
+  const root = (parsed ?? {}) as Record<string, unknown>;
+  const credits = (root.credits ?? {}) as Record<string, unknown>;
+
   return {
-    balance: findBalance(parsed),
+    // 문서상 구조를 먼저 보고, 어긋나면 이름으로 찾아 들어간다.
+    balance: toNumber(credits.current_balance) ?? findBalance(parsed),
+    currency: typeof credits.currency === 'string' ? credits.currency : null,
+    username: typeof root.username === 'string' ? root.username : null,
     raw: JSON.stringify(parsed, null, 2),
   };
 }

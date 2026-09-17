@@ -6,11 +6,16 @@
  * 공용 PC에서 쓸 때는 키 패널의 휴지통 버튼으로 지우고 나온다.
  */
 
-/** fal은 이미지 생성·편집, Gemini는 한글→영어 변환에만 쓴다. */
-export type KeyName = 'fal' | 'gemini';
+/**
+ * fal — 이미지 생성·편집 (API 스코프)
+ * falAdmin — 크레딧 잔액 조회 (ADMIN 스코프). 잔액을 안 볼 거면 넣지 않아도 된다
+ * gemini — 한글→영어 변환
+ */
+export type KeyName = 'fal' | 'falAdmin' | 'gemini';
 
 const STORAGE_KEY: Record<KeyName, string> = {
   fal: 'face-studio:fal-api-key',
+  falAdmin: 'face-studio:fal-admin-key',
   gemini: 'face-studio:gemini-api-key',
 };
 
@@ -32,6 +37,7 @@ export function loadApiKeys(): ApiKeys {
   const store = safeStorage();
   return {
     fal: store?.getItem(STORAGE_KEY.fal) ?? '',
+    falAdmin: store?.getItem(STORAGE_KEY.falAdmin) ?? '',
     gemini: store?.getItem(STORAGE_KEY.gemini) ?? '',
   };
 }
