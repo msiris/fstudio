@@ -147,6 +147,7 @@ export default function ImageGen({
         src={state.result}
         note={state.note}
         sentPrompt={state.sentPrompt}
+        busy={state.busy}
         fileName="face-studio-gen.png"
       />
     </div>

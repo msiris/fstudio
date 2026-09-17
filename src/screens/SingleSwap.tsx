@@ -120,6 +120,7 @@ export default function SingleSwap({
         src={state.result}
         note={state.note}
         sentPrompt={state.sentPrompt}
+        busy={state.busy}
         fileName="face-studio-single.png"
       />
     </div>
