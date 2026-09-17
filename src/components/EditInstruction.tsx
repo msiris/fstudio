@@ -13,7 +13,8 @@ export default function EditInstruction({
   placeholder,
 }: {
   value: string;
-  onChange: (next: string) => void;
+  /** 프리셋 칩으로 채운 경우 어떤 프리셋이었는지 함께 넘긴다. */
+  onChange: (next: string, preset?: EditPreset) => void;
   presets: EditPreset[];
   placeholder: string;
 }) {
@@ -33,7 +34,7 @@ export default function EditInstruction({
           <Chip
             key={preset.label}
             active={value === preset.text}
-            onClick={() => onChange(preset.text)}
+            onClick={() => onChange(preset.text, preset)}
           >
             {preset.label}
           </Chip>

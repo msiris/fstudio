@@ -1,4 +1,4 @@
-import { Image as ImageIcon, Users } from 'lucide-react';
+import { Image as ImageIcon, ShieldCheck, Users } from 'lucide-react';
 import Card from '../components/Card';
 import Chip from '../components/Chip';
 import EditInstruction from '../components/EditInstruction';
@@ -7,6 +7,7 @@ import ModelPicker from '../components/ModelPicker';
 import PrimaryButton from '../components/PrimaryButton';
 import ResultPanel from '../components/ResultPanel';
 import SectionLabel from '../components/SectionLabel';
+import Toggle from '../components/Toggle';
 import { FACE_COUNTS, MULTI_PRESETS } from '../constants';
 import { EDIT_MODELS, findModel } from '../lib/falModels';
 import type { ApiKeys } from '../lib/keyStore';
@@ -61,7 +62,11 @@ export default function MultiSwap({
       model,
       falKey: keys.fal,
       geminiKey: keys.gemini,
-      build: (text) => buildEditPrompt(text, { referenceFaces: usedFaces.length }),
+      build: (text) =>
+        buildEditPrompt(text, {
+          referenceFaces: usedFaces.length,
+          preserveIdentity: state.preserveIdentity,
+        }),
     });
 
     onChange({ ...outcome, busy: false });
@@ -123,9 +128,23 @@ export default function MultiSwap({
 
       <EditInstruction
         value={state.instruction}
-        onChange={(v) => onChange({ instruction: v })}
+        // 얼굴 교체 프리셋을 고르면 얼굴 유지를 자동으로 끈다. 둘은 양립할 수 없다.
+        onChange={(v, preset) =>
+          onChange({
+            instruction: v,
+            ...(preset ? { preserveIdentity: !preset.swapsFace } : {}),
+          })
+        }
         presets={MULTI_PRESETS}
         placeholder="단체 사진을 어떻게 바꿀지 적어주세요. 아래 칩을 눌러 시작해도 됩니다."
+      />
+
+      <Toggle
+        icon={ShieldCheck}
+        on={state.preserveIdentity}
+        onChange={(preserveIdentity) => onChange({ preserveIdentity })}
+        title="얼굴 유지"
+        desc="얼굴을 바꾸는 지시라면 꺼주세요"
       />
 
       <ModelPicker

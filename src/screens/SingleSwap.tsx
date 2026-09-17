@@ -1,4 +1,4 @@
-import { Image as ImageIcon, User, Wand2 } from 'lucide-react';
+import { Image as ImageIcon, ShieldCheck, User, Wand2 } from 'lucide-react';
 import Card from '../components/Card';
 import EditInstruction from '../components/EditInstruction';
 import ImageDrop from '../components/ImageDrop';
@@ -50,7 +50,12 @@ export default function SingleSwap({
       model,
       falKey: keys.fal,
       geminiKey: keys.gemini,
-      build: (text) => buildEditPrompt(text, { referenceFaces, enhance: state.enhance }),
+      build: (text) =>
+        buildEditPrompt(text, {
+          referenceFaces,
+          enhance: state.enhance,
+          preserveIdentity: state.preserveIdentity,
+        }),
     });
 
     onChange({ ...outcome, busy: false });
@@ -82,7 +87,13 @@ export default function SingleSwap({
 
       <EditInstruction
         value={state.instruction}
-        onChange={(v) => onChange({ instruction: v })}
+        // 얼굴 교체 프리셋을 고르면 얼굴 유지를 자동으로 끈다. 둘은 양립할 수 없다.
+        onChange={(v, preset) =>
+          onChange({
+            instruction: v,
+            ...(preset ? { preserveIdentity: !preset.swapsFace } : {}),
+          })
+        }
         presets={SINGLE_PRESETS}
         placeholder="사진을 어떻게 바꿀지 적어주세요. 아래 칩을 눌러 시작해도 됩니다."
       />
@@ -91,6 +102,14 @@ export default function SingleSwap({
         models={EDIT_MODELS}
         value={state.model}
         onChange={(id) => onChange({ model: id })}
+      />
+
+      <Toggle
+        icon={ShieldCheck}
+        on={state.preserveIdentity}
+        onChange={(preserveIdentity) => onChange({ preserveIdentity })}
+        title="얼굴 유지"
+        desc="얼굴을 바꾸는 지시라면 꺼주세요"
       />
 
       <Toggle

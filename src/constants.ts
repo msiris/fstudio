@@ -19,7 +19,12 @@ export const MAX_REFERENCES = 3;
  * 편집 지시 프리셋. 칩을 누르면 입력란을 이 문장으로 채우고, 사용자가 이어서 고친다.
  * 어떤 지시가 실제로 통하는지 빠르게 확인하는 것이 목적이다.
  */
-export type EditPreset = { label: string; text: string };
+export type EditPreset = {
+  label: string;
+  text: string;
+  /** 얼굴 자체를 바꾸는 지시. 고르면 얼굴 유지 토글을 자동으로 끈다. */
+  swapsFace?: boolean;
+};
 
 export const SINGLE_PRESETS: EditPreset[] = [
   { label: '포즈 바꾸기', text: '인물의 자세만 팔짱을 끼고 정면을 보는 자세로 바꿔줘.' },
@@ -30,6 +35,7 @@ export const SINGLE_PRESETS: EditPreset[] = [
   {
     label: '얼굴 바꾸기',
     text: '첫 번째 사진 속 인물의 얼굴을 두 번째 사진에 있는 사람의 얼굴로 바꿔줘.',
+    swapsFace: true,
   },
 ];
 
@@ -41,5 +47,6 @@ export const MULTI_PRESETS: EditPreset[] = [
   {
     label: '얼굴 바꾸기',
     text: '첫 번째 사진 속 인물들의 얼굴을, 뒤에 올린 얼굴 사진들로 왼쪽부터 순서대로 바꿔줘.',
+    swapsFace: true,
   },
 ];

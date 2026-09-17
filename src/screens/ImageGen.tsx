@@ -1,4 +1,4 @@
-import { Image as ImageIcon, Sparkles } from 'lucide-react';
+import { Image as ImageIcon, ShieldCheck, Sparkles } from 'lucide-react';
 import Card from '../components/Card';
 import Chip from '../components/Chip';
 import ImageDrop from '../components/ImageDrop';
@@ -6,6 +6,7 @@ import ModelPicker from '../components/ModelPicker';
 import PrimaryButton from '../components/PrimaryButton';
 import ResultPanel from '../components/ResultPanel';
 import SectionLabel from '../components/SectionLabel';
+import Toggle from '../components/Toggle';
 import { FOCUS_RING } from '../components/ui';
 import { MAX_REFERENCES, RATIOS } from '../constants';
 import { findModel, GENERATE_MODELS } from '../lib/falModels';
@@ -56,11 +57,10 @@ export default function ImageGen({
       geminiKey: keys.gemini,
       // 참조를 못 받는 모델에는 "참조가 첨부됐다"고 말하지 않는다.
       build: (text) =>
-        buildGenerationPrompt(
-          text,
-          state.ratio,
-          model.acceptsImages ? state.refs.length : 0,
-        ),
+        buildGenerationPrompt(text, state.ratio, {
+          refCount: model.acceptsImages ? state.refs.length : 0,
+          preserveIdentity: state.preserveIdentity,
+        }),
     });
 
     onChange({ ...outcome, busy: false });
@@ -126,6 +126,16 @@ export default function ImageGen({
           </p>
         )}
       </Card>
+
+      {state.refs.length > 0 && model.acceptsImages && (
+        <Toggle
+          icon={ShieldCheck}
+          on={state.preserveIdentity}
+          onChange={(preserveIdentity) => onChange({ preserveIdentity })}
+          title="얼굴 유지"
+          desc="첫 번째 이미지 인물의 얼굴을 그대로 둡니다"
+        />
+      )}
 
       <PrimaryButton
         disabled={!state.prompt.trim()}
