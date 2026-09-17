@@ -50,7 +50,9 @@ export default function Home({
       </div>
 
       <div className="space-y-4">
-        <CreditBalance apiKey={keys.falAdmin} />
+        {/* ADMIN 스코프는 API 스코프를 포함한다. 키 하나(ADMIN)면 생성도 잔액도 된다.
+            둘을 나눠 쓰고 싶을 때만 아래 ADMIN 칸을 채우면 그 키로 조회한다. */}
+        <CreditBalance apiKey={keys.falAdmin || keys.fal} />
         <ApiKeyPanel keys={keys} onChange={onChangeKey} onClear={onClearKey} />
       </div>
 

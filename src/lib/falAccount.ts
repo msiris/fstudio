@@ -2,8 +2,8 @@
  * fal 계정 정보 조회.
  *
  * 주의 — 이 엔드포인트는 ADMIN 스코프 키를 요구한다.
- * 모델 호출에 쓰는 API 스코프 키로 부르면 401이 돌아온다. 같은 계정이어도 스코프가 다르면 거부된다.
- * 그래서 앱은 잔액 조회용 키를 따로 받는다.
+ * API 스코프 키로 부르면 401이 돌아온다. 같은 계정이어도 스코프가 다르면 거부된다.
+ * 반대로 ADMIN은 API를 포함하므로, ADMIN 키 하나로 모델 호출과 잔액 조회를 모두 할 수 있다.
  *
  * api.fal.ai도 CORS를 열어두고 있어 서버 없이 브라우저에서 직접 부른다.
  */
@@ -90,7 +90,7 @@ export async function fetchCredits(apiKey: string): Promise<CreditsResult> {
     if (res.status === 401 || res.status === 403) {
       // 모델 호출용 키로는 여기를 부를 수 없다. 가장 흔한 원인이라 먼저 짚어준다.
       throw new FalAccountError(
-        '이 키로는 잔액을 볼 수 없습니다. 잔액 조회는 ADMIN 스코프 키를 요구하고, 모델 호출용 API 스코프 키는 거부됩니다. fal.ai/dashboard/keys 에서 ADMIN 스코프로 키를 하나 더 만들어 아래 ADMIN 칸에 넣어주세요.',
+        '이 키로는 잔액을 볼 수 없습니다. 잔액 조회는 ADMIN 스코프만 받습니다. fal.ai/dashboard/keys 에서 ADMIN 스코프로 키를 만들어 위 칸에 넣으면 이미지 생성과 잔액 조회가 모두 됩니다.',
       );
     }
     throw new FalAccountError(`잔액 조회에 실패했습니다 (${res.status}).`);
