@@ -61,7 +61,7 @@ npm run dev
 
 ## API 키
 
-키는 두 개다. 앱에서 아무 모드나 열고 **우측 상단 열쇠 버튼** 을 누르면 입력칸이 나온다.
+키는 두 개다. **홈 화면에 입력칸이 있고**, 모드 화면에서는 우측 상단 열쇠 버튼으로 연다.
 저장 버튼은 없다. 입력하는 즉시 저장된다.
 
 | 키 | 용도 | 필수 | 발급 |
@@ -81,6 +81,22 @@ fal 키는 크레딧을 충전해야 호출된다. Gemini 키는 없어도 동�
 > fal 공식 문서는 브라우저에 `FAL_KEY` 노출을 금지하고 프록시를 권한다. 공개 서비스 기준의 경고이고,
 > 이 앱은 키가 본인 브라우저에만 있는 개인용이다. 다만 fal 키는 충전한 크레딧에 직접 접근하는
 > 자격증명이므로 소액만 충전해두는 편이 안전하다.
+
+### 크레딧 잔액
+
+홈 화면이 fal 잔액을 보여준다. **이미지 호출과 같은 키, 같은 헤더**를 쓰므로 별도 발급이 필요 없다.
+
+```
+GET https://api.fal.ai/v1/account/billing?expand=credits
+Authorization: Key {FAL_KEY}
+```
+
+키를 넣으면 자동으로 조회하고(입력 중에는 0.8초 기다린다), 새로고침 버튼으로 다시 부를 수 있다.
+
+응답 구조를 문서로 확정하지 못해 [`src/lib/falAccount.ts`](src/lib/falAccount.ts) 가
+`balance` / `credits` / `remaining` 같은 이름의 숫자를 찾아 들어간다.
+못 찾으면 그 사실을 알리고 응답 원문을 그대로 펼쳐 보여준다. 어느 값이 잔액인지 눈으로 확인하고
+파서를 고치면 된다.
 
 업로드한 이미지와 생성 결과는 메모리에만 있다. 새로고침하면 사라진다.
 
@@ -148,11 +164,12 @@ src/
 │  ├─ prompt.ts          ★ 프롬프트 레이어. 결과 품질의 대부분이 여기서 결정된다
 │  ├─ falModels.ts       ★ 모델 레지스트리. 모델을 추가하려면 여기만 고친다
 │  ├─ fal.ts             callFal 단일 호출 함수, 오류 문구
+│  ├─ falAccount.ts      크레딧 잔액 조회
 │  ├─ gemini.ts          한글→영어 변환 전용
 │  ├─ run.ts             세 모드 공용 실행 흐름
 │  ├─ image.ts           업로드 검사(jpg/png/webp, 10MB), data URL 변환
 │  └─ keyStore.ts        API 키 두 개 저장
-├─ components/           Card, ImageDrop, Chip, ModelPicker, ResultPanel 등
+├─ components/           Card, ImageDrop, Chip, ModelPicker, CreditBalance 등
 └─ screens/              Home, SingleSwap, MultiSwap, ImageGen
 
 public/

@@ -93,7 +93,14 @@ export default function App() {
           </>
         )}
 
-        {screen === 'home' && <Home go={goTo} />}
+        {screen === 'home' && (
+          <Home
+            go={goTo}
+            keys={keys}
+            onChangeKey={changeKey}
+            onClearKey={removeKey}
+          />
+        )}
         {screen === 'single' && (
           <SingleSwap
             state={single}

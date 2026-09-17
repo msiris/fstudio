@@ -1,7 +1,10 @@
 import { Sparkles, User, Users } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
+import ApiKeyPanel from '../components/ApiKeyPanel';
+import CreditBalance from '../components/CreditBalance';
 import Notice from '../components/Notice';
 import { FOCUS_RING } from '../components/ui';
+import type { ApiKeys, KeyName } from '../lib/keyStore';
 import type { Screen } from '../types';
 
 const MODES: { id: Screen; icon: LucideIcon; label: string }[] = [
@@ -10,7 +13,17 @@ const MODES: { id: Screen; icon: LucideIcon; label: string }[] = [
   { id: 'gen', icon: Sparkles, label: 'Image Gen' },
 ];
 
-export default function Home({ go }: { go: (screen: Screen) => void }) {
+export default function Home({
+  go,
+  keys,
+  onChangeKey,
+  onClearKey,
+}: {
+  go: (screen: Screen) => void;
+  keys: ApiKeys;
+  onChangeKey: (name: KeyName, next: string) => void;
+  onClearKey: (name: KeyName) => void;
+}) {
   return (
     <div className="space-y-8">
       <header>
@@ -36,10 +49,15 @@ export default function Home({ go }: { go: (screen: Screen) => void }) {
         ))}
       </div>
 
+      <div className="space-y-4">
+        <CreditBalance apiKey={keys.fal} />
+        <ApiKeyPanel keys={keys} onChange={onChangeKey} onClear={onClearKey} />
+      </div>
+
       <Notice>
-        이미지는 fal.ai로 만듭니다. 모드 화면 우측 상단에서 fal 키를 넣어주세요. 한글
-        프롬프트는 Gemini 무료 티어로 영어로 옮긴 뒤 보냅니다. 모드마다 모델을 바꿀 수
-        있습니다.
+        이미지는 fal.ai로 만듭니다. 한글 프롬프트는 Gemini 무료 티어로 영어로 옮긴 뒤
+        보냅니다. 모드마다 모델을 바꿀 수 있고, 지시하지 않은 부분은 원본 그대로 두도록
+        잠가둡니다.
       </Notice>
     </div>
   );
