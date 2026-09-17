@@ -8,7 +8,7 @@
  * 엔드포인트 ID나 스키마가 바뀌면 404나 422가 나고, 앱이 그 사실을 그대로 보여준다.
  */
 
-import type { Ratio } from '../types';
+import type { Quality, Ratio } from '../types';
 
 export type ModelKind = 'generate' | 'edit';
 
@@ -18,6 +18,7 @@ export type ModelInput = {
   /** data URL 배열. 순서가 프롬프트에서 말하는 순서와 같다. */
   images: string[];
   ratio: Ratio;
+  quality: Quality;
 };
 
 /** 실제로 부를 엔드포인트와 본문. */
@@ -34,6 +35,11 @@ export type FalModel = {
   acceptsImages: boolean;
   /** 이미지 없이는 동작하지 않는지. 편집 전용 모델이 여기 해당한다. */
   requiresImages?: boolean;
+  /**
+   * 고를 수 있는 출력 해상도. 비어 있으면 화면에 선택지를 띄우지 않는다.
+   * 정액 과금이거나 해상도를 못 고르는 모델은 여기가 비어 있다.
+   */
+  qualities?: Quality[];
   resolve(input: ModelInput): FalRequest;
 };
 
@@ -72,10 +78,12 @@ type SeedreamSpec = {
   t2i: string;
   edit: string;
   /**
-   * Original 비율일 때 보낼 image_size.
+   * Original 비율과 편집에서 보낼 image_size.
    * v4는 'auto'였는데 v4.5부터 사라져서 버전마다 다르다. 틀리면 422가 난다.
    */
-  autoSize: string;
+  autoSize: (quality: Quality) => string;
+  /** 해상도를 고를 수 있는 모델만 채운다. */
+  qualities?: Quality[];
   note: Record<ModelKind, string>;
 };
 
@@ -93,7 +101,8 @@ const seedream =
     note: spec.note[kind],
     kind,
     acceptsImages: true,
-    resolve: ({ prompt, images, ratio }) =>
+    qualities: spec.qualities,
+    resolve: ({ prompt, images, ratio, quality }) =>
       images.length
         ? {
             id: spec.edit,
@@ -102,13 +111,17 @@ const seedream =
             body: {
               prompt,
               image_urls: images,
-              image_size: spec.autoSize,
+              image_size: spec.autoSize(quality),
               num_images: 1,
             },
           }
         : {
             id: spec.t2i,
-            body: { prompt, image_size: sizeFor(ratio, spec.autoSize), num_images: 1 },
+            body: {
+              prompt,
+              image_size: sizeFor(ratio, spec.autoSize(quality)),
+              num_images: 1,
+            },
           },
   });
 
@@ -116,10 +129,11 @@ const seedream5 = seedream({
   label: 'Seedream 5 Pro',
   t2i: 'bytedance/seedream/v5/pro/text-to-image',
   edit: 'bytedance/seedream/v5/pro/edit',
-  autoSize: 'auto_2K',
+  autoSize: (quality) => (quality === '1K' ? 'auto_1K' : 'auto_2K'),
+  qualities: ['1K', '2K'],
   note: {
-    edit: '한 부분만 바꾸고 나머지 화면은 그대로 두도록 만들어진 모델. 얼굴이 흔들린다면 이쪽을 먼저 쓴다.',
-    generate: '가장 최신 Seedream. 참조 이미지를 넣으면 편집 엔드포인트로 자동 전환된다.',
+    edit: '한 부분만 바꾸고 나머지 화면은 그대로 두도록 만들어진 모델. 얼굴이 흔들린다면 이쪽을 먼저 쓴다. 1K는 장당 약 $0.0675, 2K는 그 두 배다.',
+    generate: '가장 최신 Seedream. 참조 이미지를 넣으면 편집 엔드포인트로 자동 전환된다. 1K는 장당 약 $0.0675, 2K는 그 두 배다.',
   },
 });
 
@@ -127,10 +141,11 @@ const seedream45 = seedream({
   label: 'Seedream 4.5',
   t2i: 'fal-ai/bytedance/seedream/v4.5/text-to-image',
   edit: 'fal-ai/bytedance/seedream/v4.5/edit',
-  autoSize: 'auto_2K',
+  // 정액 과금이라 해상도를 낮춰도 요금이 줄지 않는다. 선택지를 띄우지 않는다.
+  autoSize: () => 'auto_2K',
   note: {
-    edit: '생성과 편집을 한 모델로 처리한다. 참조를 10장까지 받는다. 5 Pro가 안 맞으면 시도해본다.',
-    generate: '생성과 편집을 한 모델로 처리한다. 장당 약 $0.04.',
+    edit: '장당 약 $0.04 정액. 해상도와 무관하다. 5 Pro 1K보다 싸서 반복 시험에 쓸 만하다.',
+    generate: '생성과 편집을 한 모델로 처리한다. 장당 약 $0.04 정액.',
   },
 });
 

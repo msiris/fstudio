@@ -46,6 +46,7 @@ export default function SingleSwap({
       raw: instruction,
       images,
       ratio: 'Original',
+      quality: state.quality,
       model,
       falKey: apiKey,
       build: (text) =>
@@ -94,6 +95,8 @@ export default function SingleSwap({
         models={EDIT_MODELS}
         value={state.model}
         onChange={(id) => onChange({ model: id })}
+        quality={state.quality}
+        onChangeQuality={(quality) => onChange({ quality })}
       />
 
       <Toggle

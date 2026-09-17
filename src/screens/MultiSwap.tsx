@@ -58,6 +58,7 @@ export default function MultiSwap({
       raw: instruction,
       images: [state.target as string, ...usedFaces],
       ratio: 'Original',
+      quality: state.quality,
       model,
       falKey: apiKey,
       build: (text) =>
@@ -143,6 +144,8 @@ export default function MultiSwap({
         models={EDIT_MODELS}
         value={state.model}
         onChange={(id) => onChange({ model: id })}
+        quality={state.quality}
+        onChangeQuality={(quality) => onChange({ quality })}
       />
 
       <PrimaryButton disabled={!ready} busy={state.busy} onClick={() => void run()}>

@@ -1,5 +1,5 @@
 import { DEFAULT_EDIT_MODEL, DEFAULT_GENERATE_MODEL } from './lib/falModels';
-import type { ImageValue, Ratio } from './types';
+import type { ImageValue, Quality, Ratio } from './types';
 
 /**
  * 모드별 입력 상태. 홈으로 나갔다 돌아와도 유지되도록 App에서 들고 있는다.
@@ -15,6 +15,8 @@ export type SingleState = {
   instruction: string;
   /** 고른 fal 모델의 엔드포인트 ID. */
   model: string;
+  /** 출력 해상도. 모델에 따라 요금이 2배 차이 난다. */
+  quality: Quality;
   busy: boolean;
   result: string | null;
   note: string | null;
@@ -28,6 +30,7 @@ export type MultiState = {
   scopeLock: boolean;
   instruction: string;
   model: string;
+  quality: Quality;
   busy: boolean;
   result: string | null;
   note: string | null;
@@ -41,6 +44,7 @@ export type GenState = {
   /** 지시가 말한 것만 바꾼다. 참조 이미지가 있을 때만 의미가 있다. */
   scopeLock: boolean;
   model: string;
+  quality: Quality;
   busy: boolean;
   result: string | null;
   note: string | null;
@@ -54,6 +58,7 @@ export const initialSingle: SingleState = {
   scopeLock: true,
   instruction: '',
   model: DEFAULT_EDIT_MODEL,
+  quality: '1K',
   busy: false,
   result: null,
   note: null,
@@ -67,6 +72,7 @@ export const initialMulti: MultiState = {
   scopeLock: true,
   instruction: '',
   model: DEFAULT_EDIT_MODEL,
+  quality: '1K',
   busy: false,
   result: null,
   note: null,
@@ -79,6 +85,7 @@ export const initialGen: GenState = {
   refs: [],
   scopeLock: true,
   model: DEFAULT_GENERATE_MODEL,
+  quality: '1K',
   busy: false,
   result: null,
   note: null,

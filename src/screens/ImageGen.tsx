@@ -53,6 +53,7 @@ export default function ImageGen({
       raw,
       images: state.refs,
       ratio: state.ratio,
+      quality: state.quality,
       model,
       falKey: apiKey,
       // 참조를 못 받는 모델에는 "참조가 첨부됐다"고 말하지 않는다.
@@ -84,6 +85,8 @@ export default function ImageGen({
         models={GENERATE_MODELS}
         value={state.model}
         onChange={(id) => onChange({ model: id })}
+        quality={state.quality}
+        onChangeQuality={(quality) => onChange({ quality })}
       />
 
       <div>

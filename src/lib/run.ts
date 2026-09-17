@@ -6,7 +6,7 @@
 
 import { callFal, FalError } from './fal';
 import type { FalModel } from './falModels';
-import type { Ratio } from '../types';
+import type { Quality, Ratio } from '../types';
 
 export type RunOutcome = {
   result: string | null;
@@ -19,6 +19,7 @@ export async function runImageRequest({
   raw,
   images,
   ratio,
+  quality,
   model,
   falKey,
   build,
@@ -28,6 +29,7 @@ export async function runImageRequest({
   /** data URL 배열. 순서가 프롬프트에서 말하는 순서와 같아야 한다. */
   images: string[];
   ratio: Ratio;
+  quality: Quality;
   model: FalModel;
   falKey: string;
   build: (text: string) => string;
@@ -35,7 +37,7 @@ export async function runImageRequest({
   const sentPrompt = build(raw);
 
   try {
-    const dataUrl = await callFal(model, { prompt: sentPrompt, images, ratio }, falKey);
+    const dataUrl = await callFal(model, { prompt: sentPrompt, images, ratio, quality }, falKey);
     return { result: dataUrl, note: null, sentPrompt };
   } catch (e) {
     return {

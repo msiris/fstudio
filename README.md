@@ -52,7 +52,21 @@ npm run dev
 ## 비용
 
 **이미지 생성은 유료다.** fal.ai는 선불 크레딧을 충전해 쓰는 pay-per-use 방식이다.
-모델마다 단가가 다르니 [fal.ai/pricing](https://fal.ai/pricing) 에서 확인한다.
+
+| 모델 | 장당 비용 |
+|---|---|
+| Seedream 5 Pro — 1K (기본) | 약 $0.0675 |
+| Seedream 5 Pro — 2K | 약 $0.135 |
+| Seedream 4.5 | 약 $0.04 정액 |
+
+**Seedream 5 Pro는 해상도별 과금이라 2K가 1K의 정확히 두 배다.** 그래서 기본을 1K로 둔다.
+모델 카드의 해상도 칩으로 필요할 때만 2K로 올린다.
+5 Pro에는 참조 이미지 추가분이 장당 $0.0045씩 더 붙는다.
+
+Seedream 4.5는 정액이라 해상도를 낮춰도 요금이 줄지 않는다. 그래서 해상도 선택지를 띄우지 않는다.
+반복해서 시험할 때는 5 Pro 1K보다 4.5가 싸다.
+
+최신 단가는 [fal.ai/pricing](https://fal.ai/pricing) 에서 확인한다.
 
 > Gemini API의 이미지 생성 모델(Nano Banana, Imagen, Veo)은 Free Tier가 "Not available" 이다.
 > 그래서 이미지 쪽을 fal.ai로 옮겼다. Nano Banana 자체는 fal 경유로 계속 쓸 수 있다.
@@ -117,7 +131,7 @@ API 스코프 키로 부르면 401이 돌아오고, 그 사정을 키 패널에�
 얼굴은 조금씩 달라진다. 모델 선택이 프롬프트보다 큰 변수다.
 
 - **Seedream 5 Pro** (기본) — 한 부분만 바꾸고 나머지 화면은 그대로 두도록 만들어진 모델
-- **Seedream 4.5** — 생성과 편집을 한 모델로 처리한다. 장당 약 $0.04
+- **Seedream 4.5** — 생성과 편집을 한 모델로 처리한다. 장당 약 $0.04 정액
 - **FLUX Kontext** — 국소 편집 전용. 이미지 1장이면 `flux-pro/kontext`,
   여러 장이면 `flux-pro/kontext/multi` 로 나간다
 
