@@ -24,6 +24,20 @@ function useElapsed(active: boolean): number {
 }
 
 /**
+ * 기다리는 동안 보여줄 문구.
+ *
+ * 타임아웃이 2분이라 "보통 10~30초"만 띄워두면 그 뒤로는 멈춘 것처럼 보인다.
+ * 오래 걸리는 것이 정상 범위라는 걸 경과에 따라 알려준다.
+ */
+function waitingHint(elapsed: number): string {
+  if (elapsed < 30) return '보통 10~30초 걸립니다.';
+  if (elapsed < 60) {
+    return '조금 오래 걸리고 있습니다. 해상도가 높거나 이미지가 많으면 1분을 넘기기도 합니다.';
+  }
+  return '아직 진행 중입니다. 2분까지 기다린 뒤 응답이 없으면 알려드립니다.';
+}
+
+/**
  * 결과 이미지, 진행 상태, 안내 문구, 실제로 보낸 프롬프트.
  * 전부 없으면 아무것도 그리지 않는다. 저장은 <a download>로 처리한다.
  */
@@ -62,7 +76,7 @@ export default function ResultPanel({
             <div className="text-sm font-semibold text-text">만드는 중</div>
             <div className="text-xs tabular-nums text-muted">{elapsed}초</div>
             <p className="px-6 text-center text-xs leading-relaxed text-muted">
-              보통 10~30초 걸립니다. 60초를 넘기면 중단하고 알려드립니다.
+              {waitingHint(elapsed)}
             </p>
           </div>
         ) : (

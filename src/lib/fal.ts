@@ -9,7 +9,12 @@
 import type { FalModel, ModelInput } from './falModels';
 
 const ENDPOINT = 'https://fal.run';
-const TIMEOUT_MS = 60_000;
+/**
+ * 편집 모델은 해상도와 참조 장수에 따라 1분을 넘기는 경우가 있다.
+ * 실패가 아니라 아직 그리는 중이라서, 60초에서 끊으면 멀쩡한 요청을 버리게 된다.
+ * 크레딧은 이미 쓰였으므로 기다리는 쪽이 낫다.
+ */
+const TIMEOUT_MS = 120_000;
 
 type FalImage = { url?: string; content_type?: string };
 
@@ -104,7 +109,7 @@ export async function callFal(
   } catch (e) {
     if (e instanceof DOMException && e.name === 'AbortError') {
       throw new FalError(
-        '60초 안에 응답이 오지 않았습니다. 더 빠른 모델을 고르거나 이미지 수를 줄여 다시 시도해주세요.',
+        '2분 안에 응답이 오지 않았습니다. 해상도를 1K로 낮추거나 참조 이미지를 줄여 다시 시도해주세요.',
       );
     }
     throw new FalError('네트워크 요청이 실패했습니다. 연결 상태를 확인하고 다시 시도해주세요.');
