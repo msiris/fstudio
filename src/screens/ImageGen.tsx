@@ -55,6 +55,7 @@ export default function ImageGen({
       ratio: state.ratio,
       quality: state.quality,
       model,
+      mode: '이미지 만들기',
       falKey: apiKey,
       // 참조를 못 받는 모델에는 "참조가 첨부됐다"고 말하지 않는다.
       build: (text) =>

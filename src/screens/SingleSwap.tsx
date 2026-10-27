@@ -48,6 +48,7 @@ export default function SingleSwap({
       ratio: 'Original',
       quality: state.quality,
       model,
+      mode: '얼굴 하나 바꾸기',
       falKey: apiKey,
       build: (text) =>
         buildEditPrompt(text, {

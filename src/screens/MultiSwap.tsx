@@ -60,6 +60,7 @@ export default function MultiSwap({
       ratio: 'Original',
       quality: state.quality,
       model,
+      mode: '여러 얼굴 바꾸기',
       falKey: apiKey,
       build: (text) =>
         buildEditPrompt(text, {

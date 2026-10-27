@@ -5,6 +5,7 @@
  */
 
 import { callFal, FalError } from './fal';
+import { addHistory } from './history';
 import type { FalModel } from './falModels';
 import type { Quality, Ratio } from '../types';
 
@@ -21,6 +22,7 @@ export async function runImageRequest({
   ratio,
   quality,
   model,
+  mode,
   falKey,
   build,
 }: {
@@ -31,6 +33,8 @@ export async function runImageRequest({
   ratio: Ratio;
   quality: Quality;
   model: FalModel;
+  /** 어느 화면에서 만들었는지. 기록에 남긴다. */
+  mode: string;
   falKey: string;
   build: (text: string) => string;
 }): Promise<RunOutcome> {
@@ -38,6 +42,14 @@ export async function runImageRequest({
 
   try {
     const dataUrl = await callFal(model, { prompt: sentPrompt, images, ratio, quality }, falKey);
+    // 기록 저장은 결과를 돌려준 뒤에 따로 처리한다. 저장이 막혀도 결과는 보여야 한다.
+    void addHistory({
+      mode,
+      modelLabel: model.label,
+      instruction: raw,
+      sentPrompt,
+      image: dataUrl,
+    });
     return { result: dataUrl, note: null, sentPrompt };
   } catch (e) {
     return {

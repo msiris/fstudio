@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import AppHeader from './components/AppHeader';
 import { SCREEN_TITLES } from './constants';
 import { clearApiKey, loadApiKey, saveApiKey } from './lib/keyStore';
+import History from './screens/History';
 import Home from './screens/Home';
 import ImageGen from './screens/ImageGen';
 import MultiSwap from './screens/MultiSwap';
@@ -95,6 +96,7 @@ export default function App() {
             apiKey={apiKey}
           />
         )}
+        {screen === 'history' && <History />}
         {screen === 'gen' && (
           <ImageGen
             state={gen}

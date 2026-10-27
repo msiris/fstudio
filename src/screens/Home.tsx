@@ -1,4 +1,4 @@
-import { Key, Sparkles, User, Users } from 'lucide-react';
+import { History as HistoryIcon, Key, Sparkles, User, Users } from 'lucide-react';
 import type { LucideIcon } from 'lucide-react';
 import ApiKeyPanel from '../components/ApiKeyPanel';
 import CreditBadge from '../components/CreditBadge';
@@ -81,10 +81,17 @@ export default function Home({
         ))}
       </div>
 
+      <button
+        type="button"
+        onClick={() => go('history')}
+        className={`flex h-field w-full items-center justify-center gap-2 rounded-card border border-line bg-card text-sm font-medium text-text ${FOCUS_RING}`}
+      >
+        <HistoryIcon size={16} className="text-muted" /> 기록 보기
+      </button>
+
       <Notice>
         이미지는 fal.ai로 만듭니다. 우측 상단 열쇠 버튼에서 키를 한 번 넣어두면 세 모드가
-        모두 그 키를 씁니다. 모드마다 모델을 바꿀 수 있고, 지시하지 않은 부분은 원본 그대로
-        두도록 잠가둡니다.
+        모두 그 키를 씁니다. 만든 이미지는 기록에 쌓여서 나중에 다시 꺼내 저장할 수 있습니다.
       </Notice>
     </div>
   );

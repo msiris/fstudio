@@ -108,7 +108,22 @@ API 스코프 키로 부르면 401이 돌아오고, 그 사정을 키 패널에�
 [`src/lib/falAccount.ts`](src/lib/falAccount.ts) 는 위 구조를 먼저 보고, 어긋나면
 `balance` / `remaining` 같은 이름의 숫자를 찾아 들어간다. 그래도 못 찾으면 응답 원문을 펼쳐 보여준다.
 
-업로드한 이미지와 생성 결과는 메모리에만 있다. 새로고침하면 사라진다.
+업로드한 이미지는 메모리에만 있다. 새로고침하면 사라진다.
+**생성 결과는 기록에 남는다** — 아래 참고.
+
+### 기록
+
+만든 이미지는 IndexedDB에 **누적해서** 쌓인다. 홈의 **기록 보기** 에서 다시 꺼내 저장할 수 있다.
+장수 제한은 없고, 필요 없는 건 항목마다 삭제한다. 실수로 날리지 않게 삭제는 두 번 눌러야 한다.
+
+저장소를 둘로 나눈다. `entries` 에는 썸네일과 메타데이터만, `images` 에는 원본을 넣는다.
+목록은 썸네일만 읽으므로 기록이 수백 장이 되어도 화면이 무거워지지 않고,
+원본은 저장 버튼을 눌렀을 때만 꺼낸다.
+
+이 브라우저에만 남는다. fal 대시보드의 기록과는 별개다.
+fal에도 [기록 API](https://fal.ai/docs/platform-apis/v1/models/requests/by-endpoint)가 있지만,
+이 앱은 `sync_mode` 를 켜고 호출해서 **출력이 fal 기록에 남지 않는다.**
+그래서 썸네일을 가져올 수 없어 앱 자체 기록을 쓴다.
 
 ## 모드
 
@@ -190,12 +205,14 @@ src/
 │  ├─ falModels.ts       ★ 모델 레지스트리. 모델을 추가하려면 여기만 고친다
 │  ├─ fal.ts             callFal 단일 호출 함수, 오류 문구
 │  ├─ falAccount.ts      크레딧 잔액 조회 (ADMIN 스코프 필요)
+│  ├─ history.ts         생성 기록 (IndexedDB). 썸네일과 원본을 나눠 담는다
+│  ├─ download.ts        data URL 내려받기
 │  ├─ run.ts             세 모드 공용 실행 흐름
 │  ├─ image.ts           업로드 검사(jpg/png/webp, 10MB), data URL 변환
 │  └─ keyStore.ts        API 키 저장
 ├─ components/           Card, ImageDrop, Chip, ModelPicker, CreditBadge 등
-├─ hooks/                useCredits — 잔액 조회 상태
-└─ screens/              Home, SingleSwap, MultiSwap, ImageGen
+├─ hooks/                useCredits, useHistory
+└─ screens/              Home, SingleSwap, MultiSwap, ImageGen, History
 
 public/
 ├─ manifest.webmanifest  홈 화면 설치 정보

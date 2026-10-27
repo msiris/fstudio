@@ -1,5 +1,5 @@
-/** 홈 + 3개 모드. 라우터 없이 이 값 하나로 화면을 전환한다. */
-export type Screen = 'home' | 'single' | 'multi' | 'gen';
+/** 홈 + 3개 모드 + 기록. 라우터 없이 이 값 하나로 화면을 전환한다. */
+export type Screen = 'home' | 'single' | 'multi' | 'gen' | 'history';
 
 /** Image Gen 비율 선택지. */
 export type Ratio = 'Original' | '3:4' | '9:16' | '16:9' | '1:1' | '4:3';
