@@ -61,6 +61,10 @@ const FACE_ANGLE = [
   'The head angle, gaze direction, and expression in the photograph are probably different from the reference photographs. Do not copy the reference pixels and do not rotate the head in the photograph to match the reference.',
   "Re-render the reference person's face at the angle the photograph already has, and carry the identity across by matching these traits exactly, because they do not change with angle: the shape and spacing of the eyes, the eyelid fold, the iris color, the eyebrow shape and thickness, the nose bridge width and tip shape, the lip shape and thickness, the chin and jaw line, the cheekbone structure, the ear shape, the hairline, the skin tone, and any moles, freckles, scars, or facial hair.",
   'Someone who knows this person must recognise them at a glance.',
+  // 참조가 여러 장일 때 어느 것을 주로 볼지 정해주지 않으면 모델이 아무거나 집는다.
+  'When several reference photographs are supplied, use the one whose head angle is closest to the photograph as the main guide, and use the others only to understand the three-dimensional shape of the face.',
+  // 각도 차이가 크면 모델이 포기하고 평균적인 얼굴을 그린다. 그것부터 막는다.
+  'If the angle difference is large, do not fall back on a generic or averaged face. Build the new view from the reference traits listed above, and keep the proportions between those features exactly as they are in the references.',
 ].join(' ');
 
 /** 범위 잠금을 끈 경우. 모델이 전체를 다시 해석해도 되게 둔다. */
