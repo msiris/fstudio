@@ -2,12 +2,13 @@ import { Image as ImageIcon, ShieldCheck, User, Wand2 } from 'lucide-react';
 import Card from '../components/Card';
 import EditInstruction from '../components/EditInstruction';
 import ImageDrop from '../components/ImageDrop';
+import PersonChips from '../components/PersonChips';
 import ModelPicker from '../components/ModelPicker';
 import PrimaryButton from '../components/PrimaryButton';
 import ResultPanel from '../components/ResultPanel';
 import SectionLabel from '../components/SectionLabel';
 import Toggle from '../components/Toggle';
-import { SINGLE_PRESETS } from '../constants';
+import { MAX_SOURCE_PHOTOS, SINGLE_PRESETS } from '../constants';
 import { EDIT_MODELS, findModel } from '../lib/falModels';
 import { buildEditPrompt } from '../lib/prompt';
 import { runImageRequest } from '../lib/run';
@@ -25,6 +26,10 @@ export default function SingleSwap({
   const model = findModel(EDIT_MODELS, state.model);
   const instruction = state.instruction.trim();
   const ready = Boolean(state.target) && Boolean(instruction);
+  const room = MAX_SOURCE_PHOTOS - state.sources.length;
+
+  const addSources = (photos: string[]) =>
+    onChange({ sources: [...state.sources, ...photos].slice(0, MAX_SOURCE_PHOTOS) });
 
   const run = async () => {
     if (!ready || state.busy) return;
@@ -39,8 +44,7 @@ export default function SingleSwap({
     onChange({ busy: true, progress: null, note: null, result: null, sentPrompt: null });
 
     // 대상 사진이 먼저, 참조 얼굴이 그 뒤. 프롬프트가 말하는 순서와 같아야 한다.
-    const images = [state.target, state.source].filter((v): v is string => Boolean(v));
-    const referenceFaces = state.source ? 1 : 0;
+    const images = [state.target as string, ...state.sources];
 
     const outcome = await runImageRequest({
       raw: instruction,
@@ -57,7 +61,7 @@ export default function SingleSwap({
         }),
       build: (text) =>
         buildEditPrompt(text, {
-          referenceFaces,
+          faceGroups: state.sources.length ? [state.sources.length] : [],
           enhance: state.enhance,
           scopeLock: state.scopeLock,
         }),
@@ -80,14 +84,40 @@ export default function SingleSwap({
       </Card>
 
       <Card>
-        <SectionLabel icon={User}>넣을 얼굴</SectionLabel>
-        <ImageDrop
-          value={state.source}
-          onChange={(source) => onChange({ source })}
-          label="얼굴 사진 올리기"
-          hint="얼굴을 바꿀 때만 필요합니다"
-          removeLabel="얼굴 사진 제거"
-        />
+        <div className="flex items-start justify-between">
+          <SectionLabel icon={User}>넣을 얼굴</SectionLabel>
+          <span className="text-xs text-muted">
+            {state.sources.length}/{MAX_SOURCE_PHOTOS}
+          </span>
+        </div>
+
+        <div className="grid grid-cols-4 gap-2">
+          {state.sources.map((photo, i) => (
+            <ImageDrop
+              key={i}
+              value={photo}
+              onChange={() => onChange({ sources: state.sources.filter((_, j) => j !== i) })}
+              label={`얼굴 ${i + 1}`}
+              size="sm"
+              removeLabel={`얼굴 ${i + 1} 제거`}
+            />
+          ))}
+          {room > 0 && (
+            <ImageDrop
+              value={null}
+              onChange={(v) => v && addSources([v])}
+              label="얼굴 사진 추가"
+              size="sm"
+            />
+          )}
+        </div>
+
+        <PersonChips onPick={addSources} limit={room} />
+
+        <p className="mt-3 text-xs leading-relaxed text-muted">
+          얼굴을 바꿀 때만 필요합니다. 같은 사람을 정면·측면 등 여러 각도로 넣으면, 대상
+          사진의 얼굴 각도가 달라도 같은 사람으로 들어갑니다.
+        </p>
       </Card>
 
       <EditInstruction

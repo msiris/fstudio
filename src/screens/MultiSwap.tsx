@@ -3,17 +3,17 @@ import Card from '../components/Card';
 import Chip from '../components/Chip';
 import EditInstruction from '../components/EditInstruction';
 import ImageDrop from '../components/ImageDrop';
+import PersonChips from '../components/PersonChips';
 import ModelPicker from '../components/ModelPicker';
 import PrimaryButton from '../components/PrimaryButton';
 import ResultPanel from '../components/ResultPanel';
 import SectionLabel from '../components/SectionLabel';
 import Toggle from '../components/Toggle';
-import { FACE_COUNTS, MULTI_PRESETS } from '../constants';
+import { FACE_COUNTS, MAX_SLOT_PHOTOS, MULTI_PRESETS } from '../constants';
 import { EDIT_MODELS, findModel } from '../lib/falModels';
 import { buildEditPrompt } from '../lib/prompt';
 import { runImageRequest } from '../lib/run';
 import type { MultiState } from '../state';
-import type { ImageValue } from '../types';
 
 export default function MultiSwap({
   state,
@@ -28,16 +28,17 @@ export default function MultiSwap({
 
   // 슬롯 배열은 항상 4칸을 들고 있고 count만큼만 그린다.
   // 얼굴 수를 줄였다 늘려도 올려둔 이미지가 살아남는다.
-  const setFace = (index: number, value: ImageValue) => {
-    const faces = state.faces.slice();
-    faces[index] = value;
+  const setSlot = (index: number, photos: string[]) => {
+    const faces = state.faces.map((slot, i) => (i === index ? photos : slot));
     onChange({ faces });
   };
 
-  // 보이는 슬롯 중 채운 것만 보낸다.
-  const usedFaces = state.faces
-    .slice(0, state.count)
-    .filter((v): v is string => Boolean(v));
+  const addToSlot = (index: number, photos: string[]) =>
+    setSlot(index, [...state.faces[index], ...photos].slice(0, MAX_SLOT_PHOTOS));
+
+  // 보이는 슬롯 중 채운 것만 보낸다. 사람마다 장수가 달라서 그룹으로 넘긴다.
+  const usedGroups = state.faces.slice(0, state.count).filter((slot) => slot.length > 0);
+  const usedFaces = usedGroups.flat();
 
   const instruction = state.instruction.trim();
   const ready = Boolean(state.target) && Boolean(instruction);
@@ -69,7 +70,7 @@ export default function MultiSwap({
         }),
       build: (text) =>
         buildEditPrompt(text, {
-          referenceFaces: usedFaces.length,
+          faceGroups: usedGroups.map((slot) => slot.length),
           scopeLock: state.scopeLock,
         }),
     });
@@ -107,26 +108,53 @@ export default function MultiSwap({
             ))}
           </div>
 
-          <div className="grid grid-cols-4 gap-2">
-            {Array.from({ length: state.count }, (_, i) => (
-              <div key={i}>
-                <ImageDrop
-                  value={state.faces[i]}
-                  onChange={(v) => setFace(i, v)}
-                  label={`얼굴 ${i + 1} 올리기`}
-                  size="sm"
-                  removeLabel={`얼굴 ${i + 1} 제거`}
-                />
-                <span className="mt-2 block text-center text-xs text-muted">
-                  얼굴 {i + 1}
-                </span>
-              </div>
-            ))}
+          <div className="space-y-4">
+            {Array.from({ length: state.count }, (_, i) => {
+              const slot = state.faces[i];
+              const room = MAX_SLOT_PHOTOS - slot.length;
+              return (
+                <div key={i} className="rounded-card border border-line p-3">
+                  <div className="mb-2 flex items-center justify-between">
+                    <span className="text-xs font-semibold text-text">얼굴 {i + 1}</span>
+                    <span className="text-xs text-muted">
+                      {slot.length}/{MAX_SLOT_PHOTOS}
+                    </span>
+                  </div>
+
+                  <div className="grid grid-cols-4 gap-2">
+                    {slot.map((photo, j) => (
+                      <ImageDrop
+                        key={j}
+                        value={photo}
+                        onChange={() => setSlot(i, slot.filter((_, k) => k !== j))}
+                        label={`얼굴 ${i + 1} 사진 ${j + 1}`}
+                        size="sm"
+                        removeLabel={`얼굴 ${i + 1} 사진 ${j + 1} 제거`}
+                      />
+                    ))}
+                    {room > 0 && (
+                      <ImageDrop
+                        value={null}
+                        onChange={(v) => v && addToSlot(i, [v])}
+                        label={`얼굴 ${i + 1} 사진 추가`}
+                        size="sm"
+                      />
+                    )}
+                  </div>
+
+                  <PersonChips
+                    onPick={(photos) => addToSlot(i, photos)}
+                    label="등록한 인물에서"
+                    limit={room}
+                  />
+                </div>
+              );
+            })}
           </div>
 
           <p className="mt-3 text-xs leading-relaxed text-muted">
-            채운 슬롯만 왼쪽부터 순서대로 보냅니다. 얼굴을 바꾸지 않는 지시라면 비워둬도
-            됩니다.
+            채운 슬롯만 왼쪽부터 순서대로 보냅니다. 한 슬롯에 같은 사람을 여러 각도로 넣으면
+            얼굴 각도가 달라도 같은 사람으로 들어갑니다.
           </p>
         </Card>
       )}

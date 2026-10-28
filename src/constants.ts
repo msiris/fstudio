@@ -11,6 +11,12 @@ export const SCREEN_TITLES: Record<Exclude<Screen, 'home'>, string> = {
   people: '인물 보관함',
 };
 
+/** Single Swap에서 받는 참조 얼굴 장수. 같은 사람을 각도별로 넣는다. */
+export const MAX_SOURCE_PHOTOS = 4;
+
+/** Multi Swap에서 한 사람당 받는 장수. 사람 수만큼 곱해지므로 적게 둔다. */
+export const MAX_SLOT_PHOTOS = 3;
+
 /** Multi Swap에서 고를 수 있는 얼굴 수. */
 export const FACE_COUNTS = [2, 3, 4] as const;
 

@@ -8,7 +8,8 @@ import type { ImageValue, Quality, Ratio } from './types';
 
 export type SingleState = {
   target: ImageValue;
-  source: ImageValue;
+  /** 넣을 얼굴. 같은 사람을 각도별로 여러 장 받는다. */
+  sources: string[];
   enhance: boolean;
   /** 지시가 말한 것만 바꾸고 나머지는 원본 그대로 둔다. */
   scopeLock: boolean;
@@ -30,7 +31,8 @@ export type SingleState = {
 export type MultiState = {
   target: ImageValue;
   count: number;
-  faces: ImageValue[];
+  /** 슬롯마다 한 사람. 각 사람을 각도별로 여러 장 받는다. */
+  faces: string[][];
   scopeLock: boolean;
   instruction: string;
   model: string;
@@ -65,7 +67,7 @@ export type GenState = {
 
 export const initialSingle: SingleState = {
   target: null,
-  source: null,
+  sources: [],
   enhance: true,
   scopeLock: true,
   instruction: '',
@@ -82,7 +84,7 @@ export const initialSingle: SingleState = {
 export const initialMulti: MultiState = {
   target: null,
   count: 2,
-  faces: [null, null, null, null],
+  faces: [[], [], [], []],
   scopeLock: true,
   instruction: '',
   model: DEFAULT_EDIT_MODEL,

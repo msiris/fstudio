@@ -10,8 +10,7 @@ import Toggle from '../components/Toggle';
 import { FOCUS_RING } from '../components/ui';
 import { GEN_PRESETS, MAX_REFERENCES, RATIOS } from '../constants';
 import { findModel, GENERATE_MODELS } from '../lib/falModels';
-import { getPersonPhotos } from '../lib/people';
-import { usePeople } from '../hooks/usePeople';
+import PersonChips from '../components/PersonChips';
 import { buildGenerationPrompt } from '../lib/prompt';
 import { runImageRequest } from '../lib/run';
 import type { GenState } from '../state';
@@ -26,13 +25,9 @@ export default function ImageGen({
   apiKey: string;
 }) {
   const model = findModel(GENERATE_MODELS, state.model);
-  const { people } = usePeople();
-
   /** 등록해둔 인물의 사진을 참조 뒤에 붙인다. 바탕은 참조 1이므로 순서를 건드리지 않는다. */
-  const addPerson = async (id: string) => {
-    const photos = await getPersonPhotos(id);
+  const addPerson = (photos: string[]) =>
     onChange({ refs: [...state.refs, ...photos].slice(0, MAX_REFERENCES) });
-  };
   // 편집 전용 모델은 참조 이미지가 없으면 호출 자체가 성립하지 않는다.
   const needsRefs = Boolean(model.requiresImages) && state.refs.length === 0;
 
@@ -194,18 +189,7 @@ export default function ImageGen({
             <ImageDrop value={null} onChange={addRef} label="참조 이미지 추가" size="sm" />
           )}
         </div>
-        {people.length > 0 && state.refs.length < MAX_REFERENCES && (
-          <div className="mt-3">
-            <div className="mb-2 text-xs text-muted">등록한 인물 넣기</div>
-            <div className="flex flex-wrap gap-2">
-              {people.map((person) => (
-                <Chip key={person.id} onClick={() => void addPerson(person.id)}>
-                  {person.name} · {person.photoCount}장
-                </Chip>
-              ))}
-            </div>
-          </div>
-        )}
+        <PersonChips onPick={addPerson} limit={MAX_REFERENCES - state.refs.length} />
 
         {state.refs.length > 0 && !model.acceptsImages && (
           <p className="mt-3 text-xs leading-relaxed text-muted">

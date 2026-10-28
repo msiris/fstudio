@@ -50,6 +50,19 @@ const FACE_LOCK = [
   'Do not beautify, slim, smooth, de-age, or retouch the face.',
 ].join(' ');
 
+/**
+ * 참조 인물의 얼굴 각도가 사진과 다를 때.
+ *
+ * 각도가 어긋나면 모델은 픽셀을 베낄 수 없고 새 각도로 다시 그려야 한다.
+ * 그때 "얼굴을 유지하라"고만 하면 그럴듯한 남의 얼굴이 나온다.
+ * 각도가 바뀌어도 변하지 않는 특징을 하나씩 세어줘야 같은 사람으로 알아본다.
+ */
+const FACE_ANGLE = [
+  'The head angle, gaze direction, and expression in the photograph are probably different from the reference photographs. Do not copy the reference pixels and do not rotate the head in the photograph to match the reference.',
+  "Re-render the reference person's face at the angle the photograph already has, and carry the identity across by matching these traits exactly, because they do not change with angle: the shape and spacing of the eyes, the eyelid fold, the iris color, the eyebrow shape and thickness, the nose bridge width and tip shape, the lip shape and thickness, the chin and jaw line, the cheekbone structure, the ear shape, the hairline, the skin tone, and any moles, freckles, scars, or facial hair.",
+  'Someone who knows this person must recognise them at a glance.',
+].join(' ');
+
 /** 범위 잠금을 끈 경우. 모델이 전체를 다시 해석해도 되게 둔다. */
 const LOOSE_GUIDANCE =
   "Unless the instruction explicitly asks to change them, keep the person's facial features, identity, skin tone, and hairstyle identical to the original.";
@@ -163,9 +176,36 @@ export function buildGenerationPrompt(
   ]);
 }
 
+/**
+ * 참조 인물이 몇 명이고 각자 몇 장인지 알려준다.
+ * [3] = 한 사람 3장, [2, 2] = 두 사람 각 2장.
+ * 한 사람을 여러 각도로 넣을 수 있게 되면서 장수만으로는 구분이 안 된다.
+ */
+function referenceLine(groups: number[]): string {
+  const total = groups.reduce((sum, n) => sum + n, 0);
+  if (total === 0) return '';
+
+  if (groups.length === 1) {
+    return groups[0] === 1
+      ? 'The second image is a reference photograph of the person whose face should be used.'
+      : `The following ${groups[0]} images are reference photographs of ONE person, taken at different angles. Read them together to understand the three-dimensional shape of that person's face, and use whichever is closest to the angle in the photograph as the main guide.`;
+  }
+
+  let index = 2;
+  const parts = groups.map((count, i) => {
+    const first = index;
+    index += count;
+    const range = count === 1 ? `image ${first}` : `images ${first}-${first + count - 1}`;
+    const suffix = count === 1 ? '' : ' at different angles';
+    return `${range} ${count === 1 ? 'is' : 'are'} person ${i + 1}${suffix}`;
+  });
+
+  return `The reference photographs are grouped by person: ${parts.join(', ')}. Map person 1 to the leftmost face in the photograph, person 2 to the next, and so on from left to right. Where a person has several photographs, read them together to understand the three-dimensional shape of that person's face.`;
+}
+
 export type EditPromptOptions = {
-  /** 대상 사진 뒤에 함께 보내는 참조 이미지 장수. */
-  referenceFaces?: number;
+  /** 참조 인물별 사진 장수. */
+  faceGroups?: number[];
   /** 얼굴 보정 토글. */
   enhance?: boolean;
   /** 지시가 말한 것만 바꾼다. 끄면 모델이 전체를 다시 해석해도 된다. */
@@ -180,20 +220,22 @@ export type EditPromptOptions = {
  * 얼굴은 따로 한 번 더 못박되, 얼굴을 바꾸라는 지시는 예외로 둔다.
  */
 export function buildEditPrompt(raw: string, options: EditPromptOptions = {}): string {
-  const { referenceFaces = 0, enhance = false, scopeLock = true } = options;
+  const { faceGroups = [], enhance = false, scopeLock = true } = options;
+  const hasReferences = faceGroups.some((n) => n > 0);
 
   return join([
     'Edit the attached photograph according to the instruction below.',
     'The first image is the photograph to edit.',
 
-    referenceFaces === 1 &&
-      'The second image is a reference supplied by the user. Take from it only what the instruction explicitly asks for. Do not take anything else from it — not its face, body, background, framing, or lighting.',
-    referenceFaces > 1 &&
-      `The following ${referenceFaces} images are references supplied by the user, given in order. When the instruction refers to people in the photograph, map them to the people from left to right. Take from them only what the instruction explicitly asks for — nothing else.`,
+    hasReferences && referenceLine(faceGroups.filter((n) => n > 0)),
+    hasReferences &&
+      'Take from the reference photographs only what the instruction explicitly asks for. Do not take their clothing, background, pose, framing, or lighting.',
 
     `Instruction: ${raw.trim()}`,
     languageNote(raw),
 
+    // 얼굴을 바꾸라는 지시일 때만 의미가 있지만, 아닐 때도 해가 없다.
+    hasReferences && FACE_ANGLE,
     scopeLock && SCOPE_LOCK,
     scopeLock && FACE_LOCK,
     !scopeLock && LOOSE_GUIDANCE,
