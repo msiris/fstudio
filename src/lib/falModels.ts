@@ -19,6 +19,12 @@ export type ModelInput = {
   images: string[];
   ratio: Ratio;
   quality: Quality;
+  /**
+   * 모델이 허용하는 범위에서 안전 필터를 낮춘다.
+   * 각 모델이 공개한 파라미터를 쓰는 것이라, 제공자 정책 자체가 사라지는 것은 아니다.
+   * 평범한 인물 사진이 막히는 오탐을 줄이는 용도다.
+   */
+  relaxSafety: boolean;
 };
 
 /** 실제로 부를 엔드포인트와 본문. */
@@ -102,7 +108,7 @@ const seedream =
     kind,
     acceptsImages: true,
     qualities: spec.qualities,
-    resolve: ({ prompt, images, ratio, quality }) =>
+    resolve: ({ prompt, images, ratio, quality, relaxSafety }) =>
       images.length
         ? {
             id: spec.edit,
@@ -113,6 +119,7 @@ const seedream =
               image_urls: images,
               image_size: spec.autoSize(quality),
               num_images: 1,
+              enable_safety_checker: !relaxSafety,
             },
           }
         : {
@@ -121,6 +128,7 @@ const seedream =
               prompt,
               image_size: sizeFor(ratio, spec.autoSize(quality)),
               num_images: 1,
+              enable_safety_checker: !relaxSafety,
             },
           },
   });
@@ -158,7 +166,7 @@ const nanoBanana = (kind: ModelKind): FalModel => ({
       : 'Google Gemini 이미지 모델을 fal 경유로 부른다. 지시를 잘 따르는 편이다.',
   kind,
   acceptsImages: true,
-  resolve: ({ prompt, images, ratio }) =>
+  resolve: ({ prompt, images, ratio, relaxSafety }) =>
     images.length
       ? {
           id: NANO_EDIT,
@@ -168,6 +176,8 @@ const nanoBanana = (kind: ModelKind): FalModel => ({
             aspect_ratio: 'auto',
             num_images: 1,
             output_format: 'png',
+            // 기본 4. 문서상 5가 가장 완화된 값이다.
+            safety_tolerance: relaxSafety ? 5 : 4,
           },
         }
       : {
@@ -178,6 +188,7 @@ const nanoBanana = (kind: ModelKind): FalModel => ({
             aspect_ratio: ratio === 'Original' ? '1:1' : ASPECT_RATIO[ratio],
             num_images: 1,
             output_format: 'png',
+            safety_tolerance: relaxSafety ? 5 : 4,
           },
         },
 });
@@ -198,16 +209,31 @@ const kontext = (kind: ModelKind): FalModel => ({
   kind,
   acceptsImages: true,
   requiresImages: true,
-  resolve: ({ prompt, images }) =>
-    images.length > 1
+  resolve: ({ prompt, images, relaxSafety }) => {
+    // Kontext의 기본값은 2로 거의 최대 엄격이다. 평범한 인물 사진도 자주 막힌다.
+    const safety_tolerance = relaxSafety ? 5 : 2;
+    return images.length > 1
       ? {
           id: KONTEXT_MULTI,
-          body: { prompt, image_urls: images, num_images: 1, output_format: 'png' },
+          body: {
+            prompt,
+            image_urls: images,
+            num_images: 1,
+            output_format: 'png',
+            safety_tolerance,
+          },
         }
       : {
           id: KONTEXT_SINGLE,
-          body: { prompt, image_url: images[0], num_images: 1, output_format: 'png' },
-        },
+          body: {
+            prompt,
+            image_url: images[0],
+            num_images: 1,
+            output_format: 'png',
+            safety_tolerance,
+          },
+        };
+  },
 });
 
 /** 텍스트로 새 이미지를 만드는 모델. 첫 항목이 기본값이다. */
@@ -222,7 +248,7 @@ export const GENERATE_MODELS: FalModel[] = [
     note: '가장 빠르고 싸다. 여러 번 시험해볼 때 쓴다. 참조 이미지는 쓰지 않는다.',
     kind: 'generate',
     acceptsImages: false,
-    resolve: ({ prompt, ratio }) => ({
+    resolve: ({ prompt, ratio, relaxSafety }) => ({
       id: FLUX_SCHNELL,
       body: {
         prompt,
@@ -230,6 +256,7 @@ export const GENERATE_MODELS: FalModel[] = [
         image_size: sizeFor(ratio, 'landscape_4_3'),
         num_images: 1,
         output_format: 'png',
+        enable_safety_checker: !relaxSafety,
       },
     }),
   },

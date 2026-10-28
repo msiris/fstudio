@@ -54,6 +54,7 @@ export default function ImageGen({
       images: state.refs,
       ratio: state.ratio,
       quality: state.quality,
+      relaxSafety: state.relaxSafety,
       model,
       mode: '이미지 만들기',
       falKey: apiKey,
@@ -88,6 +89,8 @@ export default function ImageGen({
         onChange={(id) => onChange({ model: id })}
         quality={state.quality}
         onChangeQuality={(quality) => onChange({ quality })}
+        relaxSafety={state.relaxSafety}
+        onChangeRelaxSafety={(relaxSafety) => onChange({ relaxSafety })}
       />
 
       <div>

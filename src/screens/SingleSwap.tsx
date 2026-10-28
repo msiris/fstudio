@@ -47,6 +47,7 @@ export default function SingleSwap({
       images,
       ratio: 'Original',
       quality: state.quality,
+      relaxSafety: state.relaxSafety,
       model,
       mode: '얼굴 하나 바꾸기',
       falKey: apiKey,
@@ -98,6 +99,8 @@ export default function SingleSwap({
         onChange={(id) => onChange({ model: id })}
         quality={state.quality}
         onChangeQuality={(quality) => onChange({ quality })}
+        relaxSafety={state.relaxSafety}
+        onChangeRelaxSafety={(relaxSafety) => onChange({ relaxSafety })}
       />
 
       <Toggle

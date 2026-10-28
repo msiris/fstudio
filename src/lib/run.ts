@@ -21,6 +21,7 @@ export async function runImageRequest({
   images,
   ratio,
   quality,
+  relaxSafety,
   model,
   mode,
   falKey,
@@ -32,6 +33,8 @@ export async function runImageRequest({
   images: string[];
   ratio: Ratio;
   quality: Quality;
+  /** 모델이 허용하는 범위에서 안전 필터를 낮춘다. */
+  relaxSafety: boolean;
   model: FalModel;
   /** 어느 화면에서 만들었는지. 기록에 남긴다. */
   mode: string;
@@ -41,7 +44,7 @@ export async function runImageRequest({
   const sentPrompt = build(raw);
 
   try {
-    const dataUrl = await callFal(model, { prompt: sentPrompt, images, ratio, quality }, falKey);
+    const dataUrl = await callFal(model, { prompt: sentPrompt, images, ratio, quality, relaxSafety }, falKey);
     // 기록 저장은 결과를 돌려준 뒤에 따로 처리한다. 저장이 막혀도 결과는 보여야 한다.
     void addHistory({
       mode,

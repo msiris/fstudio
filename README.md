@@ -190,7 +190,20 @@ FLUX schnell은 참조를 받지 않으며, 참조가 올라와 있으면 화면
 
 ### 안전 필터
 
-모델이 결과를 막으면 앱이 그 사실과 모델이 보낸 텍스트를 그대로 보여준다.
+기본값으로 보내면 평범한 인물 사진도 자주 막힌다. 특히 FLUX Kontext는 기본
+`safety_tolerance` 가 2로 거의 최대 엄격이다.
+
+모델 카드의 **안전 필터 완화** 를 켜면 각 모델이 공개한 파라미터를 쓴다.
+
+| 모델 | 파라미터 | 기본 → 완화 |
+|---|---|---|
+| Seedream 5 Pro / 4.5 | `enable_safety_checker` | `true` → `false` |
+| FLUX schnell | `enable_safety_checker` | `true` → `false` |
+| Nano Banana | `safety_tolerance` | `4` → `5` |
+| FLUX Kontext | `safety_tolerance` | `2` → `5` |
+
+모델이 공개한 설정 범위 안에서만 움직인다. 제공자 정책 자체가 없어지는 것은 아니고,
+그래도 막히면 앱이 그 사실과 모델이 보낸 텍스트를 그대로 보여준다.
 우회를 위한 프롬프트 변형을 자동으로 시도하지 않는다.
 
 ## 구조

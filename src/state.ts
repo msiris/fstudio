@@ -17,6 +17,8 @@ export type SingleState = {
   model: string;
   /** 출력 해상도. 모델에 따라 요금이 2배 차이 난다. */
   quality: Quality;
+  /** 모델이 허용하는 범위에서 안전 필터를 낮춘다. */
+  relaxSafety: boolean;
   busy: boolean;
   result: string | null;
   note: string | null;
@@ -31,6 +33,7 @@ export type MultiState = {
   instruction: string;
   model: string;
   quality: Quality;
+  relaxSafety: boolean;
   busy: boolean;
   result: string | null;
   note: string | null;
@@ -45,6 +48,7 @@ export type GenState = {
   scopeLock: boolean;
   model: string;
   quality: Quality;
+  relaxSafety: boolean;
   busy: boolean;
   result: string | null;
   note: string | null;
@@ -59,6 +63,7 @@ export const initialSingle: SingleState = {
   instruction: '',
   model: DEFAULT_EDIT_MODEL,
   quality: '1K',
+  relaxSafety: false,
   busy: false,
   result: null,
   note: null,
@@ -73,6 +78,7 @@ export const initialMulti: MultiState = {
   instruction: '',
   model: DEFAULT_EDIT_MODEL,
   quality: '1K',
+  relaxSafety: false,
   busy: false,
   result: null,
   note: null,
@@ -86,6 +92,7 @@ export const initialGen: GenState = {
   scopeLock: true,
   model: DEFAULT_GENERATE_MODEL,
   quality: '1K',
+  relaxSafety: false,
   busy: false,
   result: null,
   note: null,
