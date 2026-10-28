@@ -25,16 +25,13 @@ function useElapsed(active: boolean): number {
 
 /**
  * 기다리는 동안 보여줄 문구.
- *
- * 타임아웃이 2분이라 "보통 10~30초"만 띄워두면 그 뒤로는 멈춘 것처럼 보인다.
+ * 1분 넘게 한 문구만 떠 있으면 멈춘 것처럼 보인다.
  * 오래 걸리는 것이 정상 범위라는 걸 경과에 따라 알려준다.
  */
 function waitingHint(elapsed: number): string {
-  if (elapsed < 30) return '보통 10~30초 걸립니다.';
-  if (elapsed < 60) {
-    return '조금 오래 걸리고 있습니다. 해상도가 높거나 이미지가 많으면 1분을 넘기기도 합니다.';
-  }
-  return '아직 진행 중입니다. 2분까지 기다린 뒤 응답이 없으면 알려드립니다.';
+  if (elapsed < 60) return '보통 1분 30초 안쪽입니다.';
+  if (elapsed < 150) return '모델이 계속 그리고 있습니다. 화면을 꺼도 요청은 살아 있습니다.';
+  return '평소보다 오래 걸립니다. 앱을 닫아도 기록 화면의 "진행 중"에서 다시 가져올 수 있습니다.';
 }
 
 /**
@@ -46,12 +43,15 @@ export default function ResultPanel({
   note,
   sentPrompt,
   busy = false,
+  progress = null,
   fileName = 'face-studio.png',
 }: {
   src?: string | null;
   note?: string | null;
   sentPrompt?: string | null;
   busy?: boolean;
+  /** 큐 진행 상태. 멈춘 게 아니라는 걸 보여준다. */
+  progress?: string | null;
   fileName?: string;
 }) {
   const elapsed = useElapsed(busy);
@@ -73,7 +73,7 @@ export default function ResultPanel({
         {busy ? (
           <div className="flex h-64 w-full flex-col items-center justify-center gap-3 rounded-card border border-line bg-cardAlt">
             <Loader2 size={28} className="animate-spin text-accent" />
-            <div className="text-sm font-semibold text-text">만드는 중</div>
+            <div className="text-sm font-semibold text-text">{progress ?? '만드는 중'}</div>
             <div className="text-xs tabular-nums text-muted">{elapsed}초</div>
             <p className="px-6 text-center text-xs leading-relaxed text-muted">
               {waitingHint(elapsed)}

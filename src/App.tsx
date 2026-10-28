@@ -96,7 +96,7 @@ export default function App() {
             apiKey={apiKey}
           />
         )}
-        {screen === 'history' && <History />}
+        {screen === 'history' && <History apiKey={apiKey} />}
         {screen === 'gen' && (
           <ImageGen
             state={gen}

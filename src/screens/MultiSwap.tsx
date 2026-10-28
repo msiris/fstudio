@@ -52,7 +52,7 @@ export default function MultiSwap({
       return;
     }
 
-    onChange({ busy: true, note: null, result: null, sentPrompt: null });
+    onChange({ busy: true, progress: null, note: null, result: null, sentPrompt: null });
 
     const outcome = await runImageRequest({
       raw: instruction,
@@ -63,6 +63,10 @@ export default function MultiSwap({
       model,
       mode: '여러 얼굴 바꾸기',
       falKey: apiKey,
+      onProgress: ({ status, queuePosition }) =>
+        onChange({
+          progress: queuePosition ? `${status} · 대기열 ${queuePosition}번째` : status,
+        }),
       build: (text) =>
         buildEditPrompt(text, {
           referenceFaces: usedFaces.length,
@@ -70,7 +74,7 @@ export default function MultiSwap({
         }),
     });
 
-    onChange({ ...outcome, busy: false });
+    onChange({ ...outcome, busy: false, progress: null });
   };
 
   return (
@@ -161,6 +165,7 @@ export default function MultiSwap({
         note={state.note}
         sentPrompt={state.sentPrompt}
         busy={state.busy}
+        progress={state.progress}
         fileName="face-studio-multi.png"
       />
     </div>

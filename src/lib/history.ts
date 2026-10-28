@@ -10,9 +10,11 @@
  */
 
 const DB_NAME = 'face-studio';
-const DB_VERSION = 1;
+const DB_VERSION = 2;
 const ENTRY_STORE = 'entries';
 const IMAGE_STORE = 'images';
+/** 제출했지만 아직 결과를 못 받은 요청. 앱이 꺼져도 회수할 수 있게 남긴다. */
+const PENDING_STORE = 'pending';
 const CREATED_INDEX = 'byCreatedAt';
 
 /** 목록용 썸네일의 최대 변 길이. */
@@ -44,6 +46,9 @@ function openDb(): Promise<IDBDatabase> {
       }
       if (!db.objectStoreNames.contains(IMAGE_STORE)) {
         db.createObjectStore(IMAGE_STORE, { keyPath: 'id' });
+      }
+      if (!db.objectStoreNames.contains(PENDING_STORE)) {
+        db.createObjectStore(PENDING_STORE, { keyPath: 'requestId' });
       }
     };
 
@@ -167,6 +172,64 @@ export async function getHistoryImage(id: string): Promise<string | null> {
 
   db.close();
   return image;
+}
+
+/**
+ * 제출 직후 남기는 기록.
+ * 이 시점에 이미 요금이 걸려 있어서, 앱이 꺼지든 연결이 끊기든 결과를 되찾을 수 있어야 한다.
+ */
+export type PendingRequest = {
+  requestId: string;
+  statusUrl: string;
+  responseUrl: string;
+  createdAt: number;
+  mode: string;
+  modelLabel: string;
+  instruction: string;
+  sentPrompt: string;
+};
+
+export async function addPending(pending: PendingRequest): Promise<void> {
+  try {
+    const db = await openDb();
+    const tx = db.transaction(PENDING_STORE, 'readwrite');
+    tx.objectStore(PENDING_STORE).put(pending);
+    await done(tx);
+    db.close();
+  } catch {
+    // 저장이 안 돼도 생성은 진행한다.
+  }
+}
+
+export async function removePending(requestId: string): Promise<void> {
+  try {
+    const db = await openDb();
+    const tx = db.transaction(PENDING_STORE, 'readwrite');
+    tx.objectStore(PENDING_STORE).delete(requestId);
+    await done(tx);
+    db.close();
+  } catch {
+    // 지우지 못해도 결과는 이미 받았다.
+  }
+}
+
+/** 오래된 것부터. 먼저 제출한 것을 먼저 회수한다. */
+export async function listPending(): Promise<PendingRequest[]> {
+  try {
+    const db = await openDb();
+    const tx = db.transaction(PENDING_STORE, 'readonly');
+    const request = tx.objectStore(PENDING_STORE).getAll();
+
+    const all = await new Promise<PendingRequest[]>((resolve, reject) => {
+      request.onsuccess = () => resolve((request.result as PendingRequest[]) ?? []);
+      request.onerror = () => reject(request.error ?? new Error('진행 중 목록을 읽지 못했습니다.'));
+    });
+
+    db.close();
+    return all.sort((a, b) => a.createdAt - b.createdAt);
+  } catch {
+    return [];
+  }
 }
 
 export async function removeHistory(id: string): Promise<void> {

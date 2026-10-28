@@ -20,6 +20,8 @@ export type SingleState = {
   /** 모델이 허용하는 범위에서 안전 필터를 낮춘다. */
   relaxSafety: boolean;
   busy: boolean;
+  /** 큐 진행 상태. 생성 중에만 채운다. */
+  progress: string | null;
   result: string | null;
   note: string | null;
   sentPrompt: string | null;
@@ -35,6 +37,8 @@ export type MultiState = {
   quality: Quality;
   relaxSafety: boolean;
   busy: boolean;
+  /** 큐 진행 상태. 생성 중에만 채운다. */
+  progress: string | null;
   result: string | null;
   note: string | null;
   sentPrompt: string | null;
@@ -50,6 +54,8 @@ export type GenState = {
   quality: Quality;
   relaxSafety: boolean;
   busy: boolean;
+  /** 큐 진행 상태. 생성 중에만 채운다. */
+  progress: string | null;
   result: string | null;
   note: string | null;
   sentPrompt: string | null;
@@ -65,6 +71,7 @@ export const initialSingle: SingleState = {
   quality: '1K',
   relaxSafety: false,
   busy: false,
+  progress: null,
   result: null,
   note: null,
   sentPrompt: null,
@@ -80,6 +87,7 @@ export const initialMulti: MultiState = {
   quality: '1K',
   relaxSafety: false,
   busy: false,
+  progress: null,
   result: null,
   note: null,
   sentPrompt: null,
@@ -94,6 +102,7 @@ export const initialGen: GenState = {
   quality: '1K',
   relaxSafety: false,
   busy: false,
+  progress: null,
   result: null,
   note: null,
   sentPrompt: null,

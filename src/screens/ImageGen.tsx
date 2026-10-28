@@ -47,7 +47,7 @@ export default function ImageGen({
       return;
     }
 
-    onChange({ busy: true, note: null, result: null, sentPrompt: null });
+    onChange({ busy: true, progress: null, note: null, result: null, sentPrompt: null });
 
     const outcome = await runImageRequest({
       raw,
@@ -58,6 +58,10 @@ export default function ImageGen({
       model,
       mode: '이미지 만들기',
       falKey: apiKey,
+      onProgress: ({ status, queuePosition }) =>
+        onChange({
+          progress: queuePosition ? `${status} · 대기열 ${queuePosition}번째` : status,
+        }),
       // 참조를 못 받는 모델에는 "참조가 첨부됐다"고 말하지 않는다.
       build: (text) =>
         buildGenerationPrompt(text, state.ratio, {
@@ -66,7 +70,7 @@ export default function ImageGen({
         }),
     });
 
-    onChange({ ...outcome, busy: false });
+    onChange({ ...outcome, busy: false, progress: null });
   };
 
   return (
@@ -169,6 +173,7 @@ export default function ImageGen({
         note={state.note}
         sentPrompt={state.sentPrompt}
         busy={state.busy}
+        progress={state.progress}
         fileName="face-studio-gen.png"
       />
     </div>

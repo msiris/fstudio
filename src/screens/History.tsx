@@ -1,11 +1,12 @@
-import { Download, Trash2 } from 'lucide-react';
+import { Clock, Download, Loader2, Trash2 } from 'lucide-react';
 import { useState } from 'react';
 import Card from '../components/Card';
 import Notice from '../components/Notice';
 import { FOCUS_RING } from '../components/ui';
 import { useHistory } from '../hooks/useHistory';
+import { usePending } from '../hooks/usePending';
 import { downloadDataUrl } from '../lib/download';
-import { getHistoryImage, type HistoryEntry } from '../lib/history';
+import { getHistoryImage, type HistoryEntry, type PendingRequest } from '../lib/history';
 
 function formatDate(ms: number): string {
   return new Date(ms).toLocaleString('ko-KR', {
@@ -100,13 +101,77 @@ function HistoryCard({
   );
 }
 
-export default function History() {
-  const { entries, total, usage, loading, hasMore, error, loadMore, remove, clear } =
+/**
+ * 제출은 끝났는데 결과를 못 받은 요청.
+ * 요금이 이미 나간 것이라 버리지 않고 여기서 되찾는다.
+ */
+function PendingCard({
+  item,
+  working,
+  onRecover,
+  onDiscard,
+}: {
+  item: PendingRequest;
+  working: boolean;
+  onRecover: () => void;
+  onDiscard: () => void;
+}) {
+  return (
+    <Card className="space-y-3 border-accent/40">
+      <div className="flex items-center gap-2 text-xs font-semibold text-text">
+        <Clock size={13} className="text-accent" /> 진행 중
+      </div>
+      <div className="text-xs text-muted">
+        {formatDate(item.createdAt)} · {item.mode} · {item.modelLabel}
+      </div>
+      {item.instruction && (
+        <p className="line-clamp-2 text-xs leading-relaxed text-text">{item.instruction}</p>
+      )}
+      <div className="flex gap-2">
+        <button
+          type="button"
+          onClick={onRecover}
+          disabled={working}
+          className={`flex h-field flex-1 items-center justify-center gap-2 rounded-card bg-accent text-sm font-semibold text-white ${FOCUS_RING} ${
+            working ? 'opacity-60' : ''
+          }`}
+        >
+          {working && <Loader2 size={15} className="animate-spin" />}
+          {working ? '가져오는 중' : '결과 가져오기'}
+        </button>
+        <button
+          type="button"
+          onClick={onDiscard}
+          aria-label="목록에서 지우기"
+          className={`flex h-field shrink-0 items-center justify-center rounded-card bg-cardAlt px-4 text-muted hover:text-text ${FOCUS_RING}`}
+        >
+          <Trash2 size={15} />
+        </button>
+      </div>
+    </Card>
+  );
+}
+
+export default function History({ apiKey }: { apiKey: string }) {
+  const { entries, total, usage, loading, hasMore, error, loadMore, remove, clear, reload } =
     useHistory();
+  const pendingState = usePending(apiKey, reload);
   const [clearing, setClearing] = useState(false);
 
   return (
     <div className="space-y-4">
+      {pendingState.error && <Notice>{pendingState.error}</Notice>}
+
+      {pendingState.pending.map((item) => (
+        <PendingCard
+          key={item.requestId}
+          item={item}
+          working={pendingState.workingId === item.requestId}
+          onRecover={() => void pendingState.recover(item)}
+          onDiscard={() => void pendingState.discard(item.requestId)}
+        />
+      ))}
+
       <div className="flex items-center justify-between gap-3">
         <div className="text-xs text-muted">
           {total}장{usage !== null && ` · ${formatBytes(usage)} 사용 중`}
@@ -115,7 +180,10 @@ export default function History() {
           <button
             type="button"
             onClick={() => {
-              if (clearing) void clear();
+              if (clearing) {
+              void clear();
+              void pendingState.reload();
+            }
               else {
                 setClearing(true);
                 setTimeout(() => setClearing(false), 3000);

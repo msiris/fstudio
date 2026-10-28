@@ -42,9 +42,18 @@ npm run dev
 
 ```
 입력 → 프롬프트 레이어에서 범위 잠금·화질·구도 지시를 덧붙임
-     → fal.ai 선택 모델 호출
-     → 결과 data URI
+     → queue.fal.run 에 제출 → request_id 를 IndexedDB에 먼저 기록
+     → 2초마다 상태 확인 (대기 중 / 그리는 중)
+     → 완료되면 결과를 받아 data URL로 변환 → 화면·저장·기록
 ```
+
+**동기 엔드포인트(`fal.run`) 대신 큐를 쓴다.** 생성이 80초쯤 걸리는데 그동안 연결 하나를
+붙잡고 있으면 휴대폰에서 쉽게 끊긴다. 화면을 끄거나 와이파이가 바뀌면 브라우저가 요청을
+버리고, fal은 멀쩡히 완성해서 요금을 매긴다. 앱만 실패로 보이고 결과는 사라진다.
+
+큐는 짧은 요청만 반복하므로 끊길 틈이 없다. 제출 직후 `request_id` 를 저장해두기 때문에,
+앱을 닫거나 폰이 꺼져도 **기록 화면의 "진행 중"에서 결과를 되찾을 수 있다.**
+요금이 걸린 요청을 잃는 경로를 없애는 것이 목적이다.
 
 한글로 써도 된다. 프롬프트 레이어가 "이 지시는 한국어다"라고 모델에 알려준다.
 영어로 쓰면 더 정확하게 나오는 경우가 많다.
@@ -234,13 +243,13 @@ src/
 │  ├─ falModels.ts       ★ 모델 레지스트리. 모델을 추가하려면 여기만 고친다
 │  ├─ fal.ts             callFal 단일 호출 함수, 오류 문구
 │  ├─ falAccount.ts      크레딧 잔액 조회 (ADMIN 스코프 필요)
-│  ├─ history.ts         생성 기록 (IndexedDB). 썸네일과 원본을 나눠 담는다
+│  ├─ history.ts         생성 기록과 진행 중 요청 (IndexedDB)
 │  ├─ download.ts        data URL 내려받기
 │  ├─ run.ts             세 모드 공용 실행 흐름
 │  ├─ image.ts           업로드 검사(jpg/png/webp, 10MB), data URL 변환
 │  └─ keyStore.ts        API 키 저장
 ├─ components/           Card, ImageDrop, Chip, ModelPicker, CreditBadge 등
-├─ hooks/                useCredits, useHistory
+├─ hooks/                useCredits, useHistory, usePending
 └─ screens/              Home, SingleSwap, MultiSwap, ImageGen, History
 
 public/
@@ -286,8 +295,8 @@ const KONTEXT_MULTI  = 'fal-ai/flux-pro/kontext/multi';
 
 ## 오류 처리
 
-- 타임아웃 120초. 편집 모델이 1분을 넘기는 경우가 있어 넉넉히 둔다.
-  끊어버리면 이미 쓴 크레딧으로 받을 결과를 버리게 된다
+- 요청 하나당 30초, 전체 대기는 10분. 큐 방식이라 긴 연결을 붙잡지 않는다
+- 수거에 실패해도 제출 기록은 남는다. 기록 화면에서 다시 가져올 수 있다
 - 401·402(크레딧 부족)·404(모델 ID)·422(스키마)·429를 각각 구분해 안내한다
 - 모든 오류에 fal이 보낸 원문을 함께 보여준다. 원인은 대개 원문에만 있다
 - 실패해도 입력한 프롬프트와 이미지는 지우지 않는다

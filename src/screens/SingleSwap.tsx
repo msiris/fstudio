@@ -36,7 +36,7 @@ export default function SingleSwap({
       return;
     }
 
-    onChange({ busy: true, note: null, result: null, sentPrompt: null });
+    onChange({ busy: true, progress: null, note: null, result: null, sentPrompt: null });
 
     // 대상 사진이 먼저, 참조 얼굴이 그 뒤. 프롬프트가 말하는 순서와 같아야 한다.
     const images = [state.target, state.source].filter((v): v is string => Boolean(v));
@@ -51,6 +51,10 @@ export default function SingleSwap({
       model,
       mode: '얼굴 하나 바꾸기',
       falKey: apiKey,
+      onProgress: ({ status, queuePosition }) =>
+        onChange({
+          progress: queuePosition ? `${status} · 대기열 ${queuePosition}번째` : status,
+        }),
       build: (text) =>
         buildEditPrompt(text, {
           referenceFaces,
@@ -59,7 +63,7 @@ export default function SingleSwap({
         }),
     });
 
-    onChange({ ...outcome, busy: false });
+    onChange({ ...outcome, busy: false, progress: null });
   };
 
   return (
@@ -128,6 +132,7 @@ export default function SingleSwap({
         note={state.note}
         sentPrompt={state.sentPrompt}
         busy={state.busy}
+        progress={state.progress}
         fileName="face-studio-single.png"
       />
     </div>
