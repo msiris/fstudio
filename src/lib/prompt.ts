@@ -1,6 +1,9 @@
 /**
  * 프롬프트 레이어. UI 코드와 섞지 않는다.
  * 결과 품질의 대부분이 여기서 결정되므로 문구를 손댈 때는 이 파일만 본다.
+ *
+ * 사용자가 화면에서 보고 고치는 지시문은 한글 한두 줄이면 된다.
+ * 영어로 길게 써야 먹히는 제약은 전부 이 파일이 붙인다.
  */
 
 import type { Ratio } from '../types';
@@ -20,6 +23,16 @@ const QUALITY_MATCH =
 /** 출력에 군더더기가 붙지 않게 막는다. */
 const OUTPUT_RULE =
   'Return the image only. Do not add text, captions, watermarks, borders, or collage panels.';
+
+/**
+ * 각도가 바뀌어도 변하지 않는 특징.
+ *
+ * 얼굴 각도가 다르면 모델은 픽셀을 베낄 수 없고 새 각도로 다시 그려야 한다.
+ * 그때 "얼굴을 유지하라"고만 하면 그럴듯한 남의 얼굴이 나온다.
+ * 각도와 무관한 특징을 하나씩 세어줘야 같은 사람으로 알아본다.
+ */
+const IDENTITY_TRAITS =
+  'the shape and spacing of the eyes, the eyelid fold, the iris color, the eyebrow shape and thickness, the nose bridge width and tip shape, the lip shape and thickness, the chin and jaw line, the cheekbone structure, the ear shape, the hairline, the skin tone, and any moles, freckles, scars, or facial hair';
 
 /**
  * 지시하지 않은 것을 건드리지 못하게 막는 문단.
@@ -50,16 +63,10 @@ const FACE_LOCK = [
   'Do not beautify, slim, smooth, de-age, or retouch the face.',
 ].join(' ');
 
-/**
- * 참조 인물의 얼굴 각도가 사진과 다를 때.
- *
- * 각도가 어긋나면 모델은 픽셀을 베낄 수 없고 새 각도로 다시 그려야 한다.
- * 그때 "얼굴을 유지하라"고만 하면 그럴듯한 남의 얼굴이 나온다.
- * 각도가 바뀌어도 변하지 않는 특징을 하나씩 세어줘야 같은 사람으로 알아본다.
- */
+/** 참조 인물의 얼굴 각도가 사진과 다를 때. */
 const FACE_ANGLE = [
   'The head angle, gaze direction, and expression in the photograph are probably different from the reference photographs. Do not copy the reference pixels and do not rotate the head in the photograph to match the reference.',
-  "Re-render the reference person's face at the angle the photograph already has, and carry the identity across by matching these traits exactly, because they do not change with angle: the shape and spacing of the eyes, the eyelid fold, the iris color, the eyebrow shape and thickness, the nose bridge width and tip shape, the lip shape and thickness, the chin and jaw line, the cheekbone structure, the ear shape, the hairline, the skin tone, and any moles, freckles, scars, or facial hair.",
+  `Re-render the reference person's face at the angle the photograph already has, and carry the identity across by matching these traits exactly, because they do not change with angle: ${IDENTITY_TRAITS}.`,
   'Someone who knows this person must recognise them at a glance.',
   // 참조가 여러 장일 때 어느 것을 주로 볼지 정해주지 않으면 모델이 아무거나 집는다.
   'When several reference photographs are supplied, use the one whose head angle is closest to the photograph as the main guide, and use the others only to understand the three-dimensional shape of the face.',
@@ -104,6 +111,65 @@ function enhanceLine(locked: boolean): string {
     : 'Gently clean up skin texture and fine detail. Keep pores and natural texture; do not smooth the face into a plastic or airbrushed look.';
 }
 
+/* ------------------------------------------------------------------ */
+/* 예시 프리셋                                                          */
+/* ------------------------------------------------------------------ */
+
+/**
+ * 예시 프리셋의 종류. 둘은 방향이 반대다.
+ *
+ * - wear-scene: 참조 1의 "사람"을 지키고, 참조 2에서 의상·배경·자세를 가져온다
+ * - swap-person: 참조 1의 "장면"을 지키고, 참조 2에서 사람을 가져온다
+ *
+ * 어느 쪽이든 참조 1이 지킬 쪽, 참조 2가 가져올 쪽이다. 이 규칙을 둘 다 지킨다.
+ */
+export type PresetKind = 'wear-scene' | 'swap-person';
+
+export type PresetRefs = { kind: PresetKind; a: number; b: number };
+
+/** 한글 지시문의 "참조 1 / 참조 2"를 실제 이미지 번호와 역할에 묶어준다. */
+const PRESET_ROLES: Record<PresetKind, { a: string; b: string; personSlot: 'a' | 'b' }> = {
+  'wear-scene': { a: 'PERSON reference', b: 'STYLE reference', personSlot: 'a' },
+  'swap-person': { a: 'SCENE reference', b: 'PERSON reference', personSlot: 'b' },
+};
+
+function slotLine(start: number, count: number, role: string, label: string, person: boolean) {
+  if (count === 0) return '';
+  const range = count === 1 ? `Image ${start} is` : `Images ${start}-${start + count - 1} are`;
+  let multi = '';
+  if (count > 1) {
+    multi = person
+      ? ' They show the same person at different angles — read them together to understand the three-dimensional shape of that face.'
+      : ' Read them together.';
+  }
+  return `${range} "${label}", the ${role}.${multi}`;
+}
+
+const WEAR_SCENE = [
+  'Task frame — this outranks any other reading of the instruction:',
+  'The PERSON reference decides WHO is in the result. The STYLE reference decides WHAT they wear, WHERE they are, and HOW they are posed.',
+  `Keep from the PERSON reference: the face and identity, the head and body proportions, the skin tone, and the hair color and texture. Match these traits exactly: ${IDENTITY_TRAITS}. Someone who knows this person must recognise them at a glance.`,
+  'Take from the STYLE reference: the clothing and the way it folds and sits on the body, the background and every object in it, the body pose — the position and angle of the head, neck, shoulders, arms, elbows, hands, fingers, hips, and legs — the camera angle, the framing and crop, and the lighting direction and color.',
+  'If a different person appears in the STYLE reference, that person is replaced entirely. Do not carry any of their facial features, body proportions, or hair into the result.',
+  'The head angle the STYLE reference requires is probably different from the PERSON reference. Re-render the person at that new angle rather than copying reference pixels, and do not fall back on a generic or averaged face.',
+].join(' ');
+
+const SWAP_PERSON = [
+  'Task frame — this outranks any other reading of the instruction:',
+  'The SCENE reference is the canvas and must survive unchanged: the background, every object in it, the lighting direction and color, the camera angle, the framing and crop, the clothing and the way it folds and sits on the body, and above all the body pose — the exact position and angle of the head, neck, shoulders, arms, elbows, hands, fingers, hips, and legs.',
+  'The person must occupy the same silhouette, at the same scale, in the same position in the frame. Do not re-pose, re-frame, re-light, or redraw the scene. Treat every pixel the instruction does not name as fixed.',
+  'Replace only the face and identity of the person in the SCENE reference with the person shown in the PERSON reference.',
+  `The head angle, gaze direction, and expression in the SCENE reference are probably different from the PERSON reference. Do not copy the reference pixels and do not rotate the head in the scene to match the reference. Re-render the person's face at the angle the scene already has, and carry the identity across by matching these traits exactly, because they do not change with angle: ${IDENTITY_TRAITS}. Someone who knows this person must recognise them at a glance. If the angle difference is large, do not fall back on a generic or averaged face.`,
+  'From the PERSON reference take only the face and head identity. Do not take their clothing, background, pose, framing, or lighting. Blend into the scene lighting and color so there is no visible seam, but do not alter the facial features themselves to make the blend easier.',
+].join(' ');
+
+const PRESET_SCAFFOLD: Record<PresetKind, string> = {
+  'wear-scene': WEAR_SCENE,
+  'swap-person': SWAP_PERSON,
+};
+
+/* ------------------------------------------------------------------ */
+
 export type GenerationPromptOptions = {
   /** 함께 보내는 참조 이미지 장수. 0이면 참조 안내를 넣지 않는다. */
   refCount?: number;
@@ -113,11 +179,10 @@ export type GenerationPromptOptions = {
    */
   scopeLock?: boolean;
   /**
-   * 지시문이 역할과 제약을 스스로 담고 있는 경우.
-   * 예시 프롬프트가 "2번을 캔버스로 삼으라"처럼 일반 문구와 다른 역할을 지정하기 때문에,
-   * 일반 역할 문장과 잠금 문단을 빼고 지시문을 그대로 살린다.
+   * 예시 프리셋을 고른 경우. 묶음별 장수를 함께 받는다.
+   * 역할 안내와 제약 문단을 여기서 붙이므로, 사용자가 고치는 지시문은 한글 한 줄이면 된다.
    */
-  selfContained?: boolean;
+  preset?: PresetRefs | null;
 };
 
 /**
@@ -132,17 +197,21 @@ export function buildGenerationPrompt(
   ratio: string,
   options: GenerationPromptOptions = {},
 ): string {
-  const { refCount = 0, scopeLock = false, selfContained = false } = options;
+  const { refCount = 0, scopeLock = false, preset = null } = options;
   const hint = RATIO_HINT[ratio as Exclude<Ratio, 'Original'>];
   const locked = refCount > 0 && scopeLock;
   const extras = refCount - 1;
 
-  if (selfContained) {
-    // 지시문이 이미 역할과 제약을 다 담고 있다. 화질과 출력 규칙만 덧붙인다.
+  // 프리셋은 역할이 분명해서 일반 문구와 섞으면 오히려 충돌한다.
+  if (preset && preset.a > 0) {
+    const roles = PRESET_ROLES[preset.kind];
     return join([
       'Edit the attached images according to the instruction below.',
+      slotLine(1, preset.a, roles.a, '참조 1', roles.personSlot === 'a'),
+      slotLine(preset.a + 1, preset.b, roles.b, '참조 2', roles.personSlot === 'b'),
       `Instruction: ${raw.trim()}`,
       languageNote(raw),
+      PRESET_SCAFFOLD[preset.kind],
       QUALITY_MATCH,
       OUTPUT_RULE,
     ]);

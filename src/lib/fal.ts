@@ -90,7 +90,7 @@ function baseMessage(status: number, endpointId: string, detail: string): string
   }
   if (status === 422) {
     if (isContentBlock(detail)) {
-      return '콘텐츠 정책에 막혔습니다. 모델 카드의 "안전 필터 완화"를 켜거나 Seedream으로 바꿔보세요. 이미 GPU를 쓴 요청이라 요금이 나갈 수 있습니다.';
+      return '콘텐츠 정책에 막혔습니다. 안전 필터는 이미 가장 느슨하게 보내고 있어서, 남은 건 제공자 정책입니다. 다른 모델로 바꿔보세요. 이미 GPU를 쓴 요청이라 요금이 나갈 수 있습니다.';
     }
     return `모델이 입력을 받아들이지 않았습니다. "${endpointId}"의 입력 스키마가 바뀐 것으로 보입니다. src/lib/falModels.ts의 resolve를 모델 페이지와 맞춰주세요.`;
   }
@@ -209,7 +209,7 @@ function readResult(data: FalResponse): FalSuccess | null {
   return {
     dataUrl: url,
     warning: flagged
-      ? '모델의 안전 필터가 이 결과를 표시했습니다. 이미지가 비어 있거나 검게 나왔다면 그래서입니다. 모델 카드의 "안전 필터 완화"를 켜면 오탐을 줄일 수 있습니다.'
+      ? '모델의 안전 필터가 이 결과를 표시했습니다. 이미지가 비어 있거나 검게 나왔다면 그래서입니다. 다른 모델로 바꾸면 통과하는 경우가 있습니다.'
       : null,
   };
 }

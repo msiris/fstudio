@@ -26,7 +26,6 @@ export async function runImageRequest({
   images,
   ratio,
   quality,
-  relaxSafety,
   model,
   mode,
   falKey,
@@ -39,8 +38,6 @@ export async function runImageRequest({
   images: string[];
   ratio: Ratio;
   quality: Quality;
-  /** 모델이 허용하는 범위에서 안전 필터를 낮춘다. */
-  relaxSafety: boolean;
   model: FalModel;
   /** 어느 화면에서 만들었는지. 기록에 남긴다. */
   mode: string;
@@ -58,7 +55,7 @@ export async function runImageRequest({
   try {
     submission = await submitFal(
       model,
-      { prompt: sentPrompt, images, ratio, quality, relaxSafety, baseSize },
+      { prompt: sentPrompt, images, ratio, quality, baseSize },
       falKey,
     );
   } catch (e) {

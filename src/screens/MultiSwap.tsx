@@ -60,7 +60,6 @@ export default function MultiSwap({
       images: [state.target as string, ...usedFaces],
       ratio: 'Original',
       quality: state.quality,
-      relaxSafety: state.relaxSafety,
       model,
       mode: '여러 얼굴 바꾸기',
       falKey: apiKey,
@@ -180,8 +179,6 @@ export default function MultiSwap({
         onChange={(id) => onChange({ model: id })}
         quality={state.quality}
         onChangeQuality={(quality) => onChange({ quality })}
-        relaxSafety={state.relaxSafety}
-        onChangeRelaxSafety={(relaxSafety) => onChange({ relaxSafety })}
       />
 
       <PrimaryButton disabled={!ready} busy={state.busy} onClick={() => void run()}>

@@ -4,6 +4,9 @@
  * 모델마다 엔드포인트와 입력 스키마가 달라서, 각 항목이 자기 요청을 직접 만든다.
  * 참조 이미지가 있으면 text-to-image 대신 edit 엔드포인트로 갈아타는 것도 여기서 정한다.
  *
+ * 안전 필터는 모델마다 가장 느슨한 값으로 고정한다. 고를 일이 아니라고 봤다.
+ * 각 모델이 공개한 파라미터를 쓰는 것이라 제공자 정책 자체가 사라지지는 않는다.
+ *
  * 새 모델을 붙이려면 이 파일에 항목 하나만 추가하면 된다. 호출부는 손댈 필요가 없다.
  * 엔드포인트 ID나 스키마가 바뀌면 404나 422가 나고, 앱이 그 사실을 그대로 보여준다.
  */
@@ -24,12 +27,6 @@ export type ModelInput = {
    * 비율을 반드시 받아야 하는 모델이 있는데, 기본값으로 두면 정사각으로 잘라버린다.
    */
   baseSize: string;
-  /**
-   * 모델이 허용하는 범위에서 안전 필터를 낮춘다.
-   * 각 모델이 공개한 파라미터를 쓰는 것이라, 제공자 정책 자체가 사라지는 것은 아니다.
-   * 평범한 인물 사진이 막히는 오탐을 줄이는 용도다.
-   */
-  relaxSafety: boolean;
 };
 
 /** 실제로 부를 엔드포인트와 본문. */
@@ -114,7 +111,7 @@ const seedream =
     kind,
     acceptsImages: true,
     qualities: spec.qualities,
-    resolve: ({ prompt, images, ratio, quality, relaxSafety }) =>
+    resolve: ({ prompt, images, ratio, quality }) =>
       images.length
         ? {
             id: spec.edit,
@@ -125,7 +122,7 @@ const seedream =
               image_urls: images,
               image_size: spec.autoSize(quality),
               num_images: 1,
-              enable_safety_checker: !relaxSafety,
+              enable_safety_checker: false,
             },
           }
         : {
@@ -134,7 +131,7 @@ const seedream =
               prompt,
               image_size: sizeFor(ratio, spec.autoSize(quality)),
               num_images: 1,
-              enable_safety_checker: !relaxSafety,
+              enable_safety_checker: false,
             },
           },
   });
@@ -172,7 +169,7 @@ const nanoBanana = (kind: ModelKind): FalModel => ({
       : 'Google Gemini 이미지 모델을 fal 경유로 부른다. 지시를 잘 따르는 편이다.',
   kind,
   acceptsImages: true,
-  resolve: ({ prompt, images, ratio, relaxSafety }) =>
+  resolve: ({ prompt, images, ratio }) =>
     images.length
       ? {
           id: NANO_EDIT,
@@ -183,7 +180,7 @@ const nanoBanana = (kind: ModelKind): FalModel => ({
             num_images: 1,
             output_format: 'png',
             // 기본 4. 문서상 5가 가장 완화된 값이다.
-            safety_tolerance: relaxSafety ? 5 : 4,
+            safety_tolerance: 5,
           },
         }
       : {
@@ -194,7 +191,7 @@ const nanoBanana = (kind: ModelKind): FalModel => ({
             aspect_ratio: ratio === 'Original' ? '1:1' : ASPECT_RATIO[ratio],
             num_images: 1,
             output_format: 'png',
-            safety_tolerance: relaxSafety ? 5 : 4,
+            safety_tolerance: 5,
           },
         },
 });
@@ -215,9 +212,9 @@ const kontext = (kind: ModelKind): FalModel => ({
   kind,
   acceptsImages: true,
   requiresImages: true,
-  resolve: ({ prompt, images, relaxSafety }) => {
+  resolve: ({ prompt, images }) => {
     // Kontext의 기본값은 2로 거의 최대 엄격이다. 평범한 인물 사진도 자주 막힌다.
-    const safety_tolerance = relaxSafety ? 5 : 2;
+    const safety_tolerance = 5;
     return images.length > 1
       ? {
           id: KONTEXT_MULTI,
@@ -285,7 +282,7 @@ export const GENERATE_MODELS: FalModel[] = [
     note: '가장 빠르고 싸다. 여러 번 시험해볼 때 쓴다. 참조 이미지는 쓰지 않는다.',
     kind: 'generate',
     acceptsImages: false,
-    resolve: ({ prompt, ratio, relaxSafety }) => ({
+    resolve: ({ prompt, ratio }) => ({
       id: FLUX_SCHNELL,
       body: {
         prompt,
@@ -293,7 +290,7 @@ export const GENERATE_MODELS: FalModel[] = [
         image_size: sizeFor(ratio, 'landscape_4_3'),
         num_images: 1,
         output_format: 'png',
-        enable_safety_checker: !relaxSafety,
+        enable_safety_checker: false,
       },
     }),
   },
