@@ -43,7 +43,12 @@ function detailText(data: FalResponse): string {
   }
 }
 
-function baseMessage(status: number, endpointId: string): string {
+/** 콘텐츠 필터에 막힌 것인지. fal은 이것도 422로 돌려준다. */
+function isContentBlock(detail: string): boolean {
+  return /content_policy_violation|content policy|nsfw|safety/i.test(detail);
+}
+
+function baseMessage(status: number, endpointId: string, detail: string): string {
   if (status === 401 || status === 403) {
     return 'fal 키가 거부되었습니다. 우측 상단 키 버튼에서 다시 확인해주세요. fal.ai/dashboard/keys 에서 발급합니다.';
   }
@@ -54,6 +59,10 @@ function baseMessage(status: number, endpointId: string): string {
     return `모델을 찾지 못했습니다. 모델명을 확인하세요 — 방금 부른 엔드포인트는 "${endpointId}"입니다. src/lib/falModels.ts의 ID를 최신 값으로 바꾸면 됩니다.`;
   }
   if (status === 422) {
+    // 422는 스키마 오류와 콘텐츠 정책 거부가 같이 쓰인다. 원문으로 갈라서 안내한다.
+    if (isContentBlock(detail)) {
+      return '콘텐츠 정책에 막혔습니다. 모델 카드의 "안전 필터 완화"를 켜거나 Seedream으로 바꿔보세요. 이미 GPU를 쓴 요청이라 요금이 나갈 수 있습니다.';
+    }
     return `모델이 입력을 받아들이지 않았습니다. "${endpointId}"의 입력 스키마가 바뀐 것으로 보입니다. src/lib/falModels.ts의 resolve를 모델 페이지와 맞춰주세요.`;
   }
   if (status === 429) {
@@ -65,15 +74,19 @@ function baseMessage(status: number, endpointId: string): string {
   return `요청이 실패했습니다 (${status}).`;
 }
 
-/**
- * 이미지 생성·편집 공용 호출.
- * @returns 결과 이미지의 data URI (sync_mode가 무시된 모델이면 https URL)
- */
+export type FalSuccess = {
+  /** 결과 이미지의 data URI (sync_mode가 무시된 모델이면 https URL). */
+  dataUrl: string;
+  /** 결과는 돌려주되 함께 알릴 내용. 안전 필터 플래그 같은 것. */
+  warning: string | null;
+};
+
+/** 이미지 생성·편집 공용 호출. */
 export async function callFal(
   model: FalModel,
   input: ModelInput,
   apiKey: string,
-): Promise<string> {
+): Promise<FalSuccess> {
   if (!apiKey.trim()) {
     throw new FalError(
       'fal 키가 비어 있습니다. 우측 상단 키 버튼을 눌러 fal.ai 키를 넣어주세요.',
@@ -120,16 +133,9 @@ export async function callFal(
   const data: FalResponse = await res.json().catch(() => ({}));
 
   if (!res.ok) {
-    const base = baseMessage(res.status, request.id);
     const detail = detailText(data);
+    const base = baseMessage(res.status, request.id, detail);
     throw new FalError(detail ? `${base}\n\nfal이 보낸 내용:\n${detail}` : base);
-  }
-
-  // 안전 필터에 걸리면 검은 이미지가 온다. 결과를 보여주기 전에 짚어준다.
-  if (data.has_nsfw_concepts?.some(Boolean)) {
-    throw new FalError(
-      '모델의 안전 필터가 결과를 막았습니다. 지시를 바꿔 다시 시도해보세요. 같은 요청을 자동으로 재시도하지는 않습니다.',
-    );
   }
 
   const url = data.images?.[0]?.url ?? data.image?.url;
@@ -145,5 +151,15 @@ export async function callFal(
     );
   }
 
-  return url;
+  // 안전 필터 플래그가 붙어도 결과를 버리지 않는다.
+  // 200으로 돌아온 시점에 이미 GPU를 썼고 요금도 나갔다.
+  // 오탐이면 멀쩡한 이미지이고, 진짜로 걸렸으면 검은 이미지가 보일 뿐이다.
+  const flagged = data.has_nsfw_concepts?.some(Boolean) ?? false;
+
+  return {
+    dataUrl: url,
+    warning: flagged
+      ? '모델의 안전 필터가 이 결과를 표시했습니다. 이미지가 비어 있거나 검게 나왔다면 그래서입니다. 모델 카드의 "안전 필터 완화"를 켜면 오탐을 줄일 수 있습니다.'
+      : null,
+  };
 }

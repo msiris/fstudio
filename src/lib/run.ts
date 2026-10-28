@@ -44,7 +44,11 @@ export async function runImageRequest({
   const sentPrompt = build(raw);
 
   try {
-    const dataUrl = await callFal(model, { prompt: sentPrompt, images, ratio, quality, relaxSafety }, falKey);
+    const { dataUrl, warning } = await callFal(
+      model,
+      { prompt: sentPrompt, images, ratio, quality, relaxSafety },
+      falKey,
+    );
     // 기록 저장은 결과를 돌려준 뒤에 따로 처리한다. 저장이 막혀도 결과는 보여야 한다.
     void addHistory({
       mode,
@@ -53,7 +57,7 @@ export async function runImageRequest({
       sentPrompt,
       image: dataUrl,
     });
-    return { result: dataUrl, note: null, sentPrompt };
+    return { result: dataUrl, note: warning, sentPrompt };
   } catch (e) {
     return {
       result: null,
