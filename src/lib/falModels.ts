@@ -20,6 +20,11 @@ export type ModelInput = {
   ratio: Ratio;
   quality: Quality;
   /**
+   * 바탕 이미지(images[0])에 가장 가까운 image_size 프리셋.
+   * 비율을 반드시 받아야 하는 모델이 있는데, 기본값으로 두면 정사각으로 잘라버린다.
+   */
+  baseSize: string;
+  /**
    * 모델이 허용하는 범위에서 안전 필터를 낮춘다.
    * 각 모델이 공개한 파라미터를 쓰는 것이라, 제공자 정책 자체가 사라지는 것은 아니다.
    * 평범한 인물 사진이 막히는 오탐을 줄이는 용도다.
@@ -77,6 +82,7 @@ const NANO_EDIT = 'fal-ai/nano-banana/edit';
 const FLUX_SCHNELL = 'fal-ai/flux/schnell';
 const KONTEXT_SINGLE = 'fal-ai/flux-pro/kontext';
 const KONTEXT_MULTI = 'fal-ai/flux-pro/kontext/multi';
+const IDEOGRAM_REMIX = 'fal-ai/ideogram/character/remix';
 
 type SeedreamSpec = {
   label: string;
@@ -236,12 +242,43 @@ const kontext = (kind: ModelKind): FalModel => ({
   },
 });
 
+/**
+ * 인물 일관성 전용 모델.
+ *
+ * 다른 모델은 얼굴을 픽셀로 베끼려 들어서, 바탕의 얼굴 각도가 참조 사진과 다르면
+ * 전혀 다른 사람이 나온다. 이쪽은 인물을 따로 인식해서 장면에 넣도록 만들어졌다.
+ * 각도가 크게 어긋날 때 먼저 시도해볼 선택지다.
+ *
+ * 참조 1이 반드시 바탕이고 나머지가 인물이다. 순서를 지켜야 한다.
+ * image_size를 안 주면 정사각으로 잘려서, 바탕 비율을 재서 넣는다.
+ */
+const ideogramCharacter = (kind: ModelKind): FalModel => ({
+  key: IDEOGRAM_REMIX,
+  label: 'Ideogram Character',
+  note: '인물 일관성 전용. 바탕과 참조 인물의 얼굴 각도가 많이 다를 때 써본다. 참조 1이 바탕, 참조 2가 인물이어야 한다.',
+  kind,
+  acceptsImages: true,
+  requiresImages: true,
+  resolve: ({ prompt, images, baseSize }) => ({
+    id: IDEOGRAM_REMIX,
+    body: {
+      prompt,
+      image_url: images[0],
+      reference_image_urls: images.slice(1),
+      image_size: baseSize,
+      rendering_speed: 'QUALITY',
+      num_images: 1,
+    },
+  }),
+});
+
 /** 텍스트로 새 이미지를 만드는 모델. 첫 항목이 기본값이다. */
 export const GENERATE_MODELS: FalModel[] = [
   seedream5('generate'),
   seedream45('generate'),
   nanoBanana('generate'),
   kontext('generate'),
+  ideogramCharacter('generate'),
   {
     key: FLUX_SCHNELL,
     label: 'FLUX schnell',
@@ -267,6 +304,7 @@ export const EDIT_MODELS: FalModel[] = [
   seedream5('edit'),
   seedream45('edit'),
   kontext('edit'),
+  ideogramCharacter('edit'),
   nanoBanana('edit'),
 ];
 

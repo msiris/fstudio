@@ -7,6 +7,7 @@
 import { collectFal, FalError, submitFal, type FalProgress } from './fal';
 import type { FalModel } from './falModels';
 import { addHistory, addPending, removePending } from './history';
+import { measureImageSize } from './image';
 import type { Quality, Ratio } from '../types';
 
 export type RunOutcome = {
@@ -49,10 +50,17 @@ export async function runImageRequest({
 }): Promise<RunOutcome> {
   const sentPrompt = build(raw);
 
+  // 비율을 반드시 받아야 하는 모델이 있다. 바탕 이미지에 맞춰줘야 구도가 안 틀어진다.
+  const baseSize = images[0] ? await measureImageSize(images[0]) : 'square_hd';
+
   // 1단계 — 제출. 여기부터 요금이 걸린다.
   let submission;
   try {
-    submission = await submitFal(model, { prompt: sentPrompt, images, ratio, quality, relaxSafety }, falKey);
+    submission = await submitFal(
+      model,
+      { prompt: sentPrompt, images, ratio, quality, relaxSafety, baseSize },
+      falKey,
+    );
   } catch (e) {
     return {
       result: null,

@@ -40,3 +40,32 @@ export function splitDataUrl(dataUrl: string): { mimeType: string; data: string 
   const mimeType = head.replace(/^data:/, '').replace(/;base64$/, '');
   return { mimeType, data };
 }
+
+/**
+ * 바탕 이미지에 가장 가까운 image_size 프리셋.
+ *
+ * 비율을 지정해야만 하는 모델이 있는데, 기본값을 쓰면 정사각으로 잘라버린다.
+ * 원본 비율에 가장 가까운 프리셋을 골라 구도가 틀어지지 않게 한다.
+ */
+const SIZE_PRESETS: { name: string; ratio: number }[] = [
+  { name: 'portrait_16_9', ratio: 9 / 16 },
+  { name: 'portrait_4_3', ratio: 3 / 4 },
+  { name: 'square_hd', ratio: 1 },
+  { name: 'landscape_4_3', ratio: 4 / 3 },
+  { name: 'landscape_16_9', ratio: 16 / 9 },
+];
+
+export function measureImageSize(dataUrl: string): Promise<string> {
+  return new Promise((resolve) => {
+    const image = new Image();
+    image.onload = () => {
+      const ratio = image.width / Math.max(1, image.height);
+      const best = SIZE_PRESETS.reduce((a, b) =>
+        Math.abs(b.ratio - ratio) < Math.abs(a.ratio - ratio) ? b : a,
+      );
+      resolve(best.name);
+    };
+    image.onerror = () => resolve('square_hd');
+    image.src = dataUrl;
+  });
+}
