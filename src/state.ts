@@ -46,6 +46,8 @@ export type MultiState = {
 
 export type GenState = {
   prompt: string;
+  /** 고른 예시. 예시가 자체 역할 설명을 담고 있어 프롬프트 조립 방식이 달라진다. */
+  presetId: string | null;
   ratio: Ratio;
   refs: string[];
   /** 지시가 말한 것만 바꾼다. 참조 이미지가 있을 때만 의미가 있다. */
@@ -95,6 +97,7 @@ export const initialMulti: MultiState = {
 
 export const initialGen: GenState = {
   prompt: '',
+  presetId: null,
   ratio: 'Original',
   refs: [],
   scopeLock: true,

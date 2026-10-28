@@ -44,3 +44,52 @@ export const MULTI_PRESETS: EditPreset[] = [
     text: '첫 번째 사진 속 인물들의 얼굴을, 뒤에 올린 얼굴 사진들로 왼쪽부터 순서대로 바꿔줘.',
   },
 ];
+
+/**
+ * Image Gen 예시.
+ *
+ * 두 케이스는 사실 같은 작업이다 — 한쪽 이미지를 캔버스로 고정하고
+ * 다른 쪽에서 얼굴만 가져온다. 어느 쪽을 고정할지가 다를 뿐이다.
+ * 그 역할을 문장으로 못박아야 모델이 자세와 배경을 덜 흔든다.
+ *
+ * 영어로 쓴다. 이미지 모델이 영어 지시를 훨씬 정확하게 따른다.
+ * 사용자는 화면에서 펼쳐 보고 고칠 수 있다.
+ */
+export type GenPreset = {
+  id: string;
+  label: string;
+  /** 참조 이미지를 어떤 순서로 올려야 하는지. */
+  desc: string;
+  text: string;
+};
+
+export const GEN_PRESETS: GenPreset[] = [
+  {
+    id: 'wear-scene',
+    label: '의상·배경·포즈 입히기',
+    desc: '참조 1 = 얼굴을 쓸 인물 · 참조 2 = 가져올 의상·배경·자세',
+    text: [
+      "Recreate the second image exactly, replacing only the person's face and identity with the person from the first image.",
+      '',
+      'The second image is the canvas. Reproduce it pixel for pixel: the background, every object in it, the lighting direction and color, the camera angle, the framing and crop, the clothing and the way it folds and falls, and above all the body pose — the exact position and angle of the head, neck, shoulders, arms, elbows, hands, fingers, hips, and legs. Do not re-pose, re-frame, re-light, or redraw the scene. If the hands are in a specific position, keep them in that exact position.',
+      '',
+      "From the first image take only the face and head identity: facial structure, proportions, eyes, eyebrows, nose, mouth, jawline, ears, skin tone, skin texture, and hairstyle. Do not take the first image's clothing, background, pose, framing, or lighting.",
+      '',
+      "Blend the face into the second image's lighting and color so there is no visible seam, but do not alter the facial features themselves.",
+    ].join('\n'),
+  },
+  {
+    id: 'swap-person',
+    label: '인물만 교체',
+    desc: '참조 1 = 그대로 둘 사진 · 참조 2 = 넣을 인물',
+    text: [
+      'Keep the first image exactly as it is and replace only the person in it with the person from the second image.',
+      '',
+      'The first image is the canvas and must survive unchanged: the background, every object in it, the lighting direction and color, the camera angle, the framing and crop, the clothing and the way it sits on the body, and above all the body pose — the exact position and angle of the head, neck, shoulders, arms, elbows, hands, fingers, hips, and legs. The new person must occupy the same silhouette, at the same scale, in the same position in the frame. Do not re-pose, re-frame, re-light, or redraw the scene.',
+      '',
+      "From the second image take only the person's face and head identity: facial structure, proportions, eyes, eyebrows, nose, mouth, jawline, ears, skin tone, skin texture, and hairstyle. Do not take the second image's clothing, background, pose, framing, or lighting.",
+      '',
+      "Treat every pixel the instruction does not name as fixed. Blend the new face into the first image's lighting and color so there is no visible seam, but do not alter the facial features themselves.",
+    ].join('\n'),
+  },
+];

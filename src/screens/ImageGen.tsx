@@ -8,7 +8,7 @@ import ResultPanel from '../components/ResultPanel';
 import SectionLabel from '../components/SectionLabel';
 import Toggle from '../components/Toggle';
 import { FOCUS_RING } from '../components/ui';
-import { MAX_REFERENCES, RATIOS } from '../constants';
+import { GEN_PRESETS, MAX_REFERENCES, RATIOS } from '../constants';
 import { findModel, GENERATE_MODELS } from '../lib/falModels';
 import { buildGenerationPrompt } from '../lib/prompt';
 import { runImageRequest } from '../lib/run';
@@ -67,6 +67,7 @@ export default function ImageGen({
         buildGenerationPrompt(text, state.ratio, {
           refCount: model.acceptsImages ? state.refs.length : 0,
           scopeLock: state.scopeLock,
+          selfContained: state.presetId !== null,
         }),
     });
 
@@ -79,12 +80,60 @@ export default function ImageGen({
         <SectionLabel icon={Sparkles}>프롬프트</SectionLabel>
         <textarea
           value={state.prompt}
-          onChange={(e) => onChange({ prompt: e.target.value })}
-          rows={4}
+          onChange={(e) =>
+            onChange({
+              prompt: e.target.value,
+              // 비우면 예시에서 벗어난 것으로 본다. 그 뒤로는 일반 프롬프트로 조립한다.
+              ...(e.target.value.trim() ? {} : { presetId: null }),
+            })
+          }
+          rows={state.presetId ? 10 : 4}
           aria-label="프롬프트"
           placeholder="만들고 싶은 이미지를 적어주세요. 예: 눈 내리는 거리에 선 인물, 영화 같은 조명"
           className={`w-full resize-none rounded-card border border-line bg-cardAlt p-3 text-sm text-text placeholder:text-muted ${FOCUS_RING}`}
         />
+      </Card>
+
+      <Card>
+        <details open={state.presetId !== null}>
+          <summary
+            className={`cursor-pointer list-none text-sm font-semibold text-text ${FOCUS_RING}`}
+          >
+            예시 프롬프트
+          </summary>
+
+          <p className="mt-2 text-xs leading-relaxed text-muted">
+            참조 이미지 2장을 올리고 고르세요. 한쪽을 그대로 고정하고 다른 쪽에서 얼굴만
+            가져오도록 지시가 짜여 있습니다. 누르면 위 입력란에 들어가고, 거기서 고쳐 쓸 수
+            있습니다.
+          </p>
+
+          <div className="mt-3 space-y-3">
+            {GEN_PRESETS.map((preset) => (
+              <div key={preset.id}>
+                <Chip
+                  active={state.presetId === preset.id}
+                  onClick={() =>
+                    onChange(
+                      state.presetId === preset.id
+                        ? { presetId: null }
+                        : { presetId: preset.id, prompt: preset.text },
+                    )
+                  }
+                >
+                  {preset.label}
+                </Chip>
+                <p className="mt-1.5 text-xs leading-relaxed text-muted">{preset.desc}</p>
+              </div>
+            ))}
+          </div>
+
+          {state.presetId && state.refs.length !== 2 && (
+            <p className="mt-3 text-xs leading-relaxed text-muted">
+              이 예시는 참조 이미지 2장을 전제로 합니다. 지금은 {state.refs.length}장입니다.
+            </p>
+          )}
+        </details>
       </Card>
 
       <ModelPicker

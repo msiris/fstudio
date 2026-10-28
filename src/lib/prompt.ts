@@ -95,6 +95,12 @@ export type GenerationPromptOptions = {
    * 참조 이미지가 있을 때만 의미가 있다. 이때는 새로 생성이 아니라 편집으로 취급한다.
    */
   scopeLock?: boolean;
+  /**
+   * 지시문이 역할과 제약을 스스로 담고 있는 경우.
+   * 예시 프롬프트가 "2번을 캔버스로 삼으라"처럼 일반 문구와 다른 역할을 지정하기 때문에,
+   * 일반 역할 문장과 잠금 문단을 빼고 지시문을 그대로 살린다.
+   */
+  selfContained?: boolean;
 };
 
 /**
@@ -109,10 +115,21 @@ export function buildGenerationPrompt(
   ratio: string,
   options: GenerationPromptOptions = {},
 ): string {
-  const { refCount = 0, scopeLock = false } = options;
+  const { refCount = 0, scopeLock = false, selfContained = false } = options;
   const hint = RATIO_HINT[ratio as Exclude<Ratio, 'Original'>];
   const locked = refCount > 0 && scopeLock;
   const extras = refCount - 1;
+
+  if (selfContained) {
+    // 지시문이 이미 역할과 제약을 다 담고 있다. 화질과 출력 규칙만 덧붙인다.
+    return join([
+      'Edit the attached images according to the instruction below.',
+      `Instruction: ${raw.trim()}`,
+      languageNote(raw),
+      QUALITY_MATCH,
+      OUTPUT_RULE,
+    ]);
+  }
 
   return join([
     locked
@@ -122,11 +139,11 @@ export function buildGenerationPrompt(
     locked && 'The first image is the base photograph. Start from it and keep it intact.',
     locked &&
       extras > 0 &&
-      `The remaining ${extras} image${extras > 1 ? 's are' : ' is'} supplied only as a source to take from. Take from ${
+      // 무엇을 가져올지는 지시가 정한다. 여기서 품목을 못박으면
+      // "2번 의상을 가져와" 같은 지시와 정면으로 싸운다.
+      `The remaining ${extras} image${extras > 1 ? 's are' : ' is'} supplied as a source to take from. Take from ${
         extras > 1 ? 'them' : 'it'
-      } only what the instruction explicitly asks for — nothing else. Do not copy ${
-        extras > 1 ? 'their' : 'its'
-      } people, faces, body, background, framing, or lighting.`,
+      } exactly what the instruction names, and do not import anything the instruction does not name.`,
 
     `${locked ? 'Instruction' : 'Description'}: ${raw.trim()}`,
     languageNote(raw),
