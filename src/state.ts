@@ -1,5 +1,5 @@
 import { DEFAULT_EDIT_MODEL, DEFAULT_GENERATE_MODEL } from './lib/falModels';
-import type { PresetKind } from './lib/prompt';
+import type { PresetKind, PresetLang } from './lib/prompt';
 import type { ImageValue, Quality, Ratio } from './types';
 
 /**
@@ -46,8 +46,13 @@ export type MultiState = {
 
 export type GenState = {
   prompt: string;
-  /** 고른 예시. 예시마다 참조 묶음의 역할이 달라서 프롬프트 조립 방식도 달라진다. */
+  /**
+   * 고른 예시. 예시를 고르면 입력란의 글이 손대지 않고 그대로 나간다.
+   * 보이는 것과 보내는 것이 달라지면 사용자가 고칠 수 없기 때문이다.
+   */
   presetId: PresetKind | null;
+  /** 예시 전문을 꺼낼 언어. 읽기는 한글이 편하고, 모델은 영어를 더 정확히 따른다. */
+  presetLang: PresetLang;
   ratio: Ratio;
   /** 지킬 쪽. 1번이 항상 바탕이 된다. */
   refsA: string[];
@@ -98,6 +103,7 @@ export const initialMulti: MultiState = {
 export const initialGen: GenState = {
   prompt: '',
   presetId: null,
+  presetLang: 'ko',
   ratio: 'Original',
   refsA: [],
   refsB: [],

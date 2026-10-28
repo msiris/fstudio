@@ -29,6 +29,12 @@ const SLOT_HINT = {
   b: '여기서 무엇을 가져올지는 프롬프트가 정합니다. 필요 없으면 비워두세요.',
 };
 
+/** 예시 전문을 꺼낼 언어. 꺼낸 글이 그대로 모델에 나간다. */
+const PRESET_LANGS = [
+  { key: 'ko' as const, label: '한글' },
+  { key: 'en' as const, label: 'English' },
+];
+
 /**
  * 참조 이미지 한 묶음.
  *
@@ -146,15 +152,13 @@ export default function ImageGen({
         onChange({
           progress: queuePosition ? `${status} · 대기열 ${queuePosition}번째` : status,
         }),
+      // 예시는 전문이 입력란에 그대로 있으므로 손대지 않고 보낸다.
       // 참조를 못 받는 모델에는 "참조가 첨부됐다"고 말하지 않는다.
       build: (text) =>
         buildGenerationPrompt(text, state.ratio, {
           refCount: model.acceptsImages ? images.length : 0,
           scopeLock: state.scopeLock,
-          preset:
-            state.presetId && model.acceptsImages
-              ? { kind: state.presetId, a: state.refsA.length, b: state.refsB.length }
-              : null,
+          verbatim: state.presetId !== null,
         }),
     });
 
@@ -174,15 +178,21 @@ export default function ImageGen({
               ...(e.target.value.trim() ? {} : { presetId: null }),
             })
           }
-          rows={4}
+          rows={preset ? 16 : 4}
           aria-label="프롬프트"
           placeholder="만들고 싶은 이미지를 적어주세요. 예: 눈 내리는 거리에 선 인물, 영화 같은 조명"
           className={`w-full resize-none rounded-card border border-line bg-cardAlt p-3 text-sm text-text placeholder:text-muted ${FOCUS_RING}`}
         />
-        {preset && (
+        {preset ? (
           <p className="mt-2 text-xs leading-relaxed text-muted">
-            예시 지시문입니다. 그대로 써도 되고 고쳐 써도 됩니다. 모델이 알아들을 수 있게
-            바꾸는 작업은 앱이 알아서 합니다.
+            여기 적힌 글이 <strong className="font-semibold text-text">그대로</strong> 모델에
+            나갑니다. 앱이 뒤에서 덧붙이는 문장은 없습니다. 지우고 바꾸고 마음대로
+            고치세요.
+          </p>
+        ) : (
+          <p className="mt-2 text-xs leading-relaxed text-muted">
+            이 입력란은 지시만 적는 자리라, 아래 설정에 따라 제약 문장이 함께 나갑니다.
+            실제로 나간 전문은 결과 아래 "보낸 프롬프트 보기"에서 볼 수 있습니다.
           </p>
         )}
       </Card>
@@ -196,8 +206,32 @@ export default function ImageGen({
           </summary>
 
           <p className="mt-2 text-xs leading-relaxed text-muted">
-            예시를 고르면 아래 참조 1·2에 무엇을 올려야 하는지가 그 예시에 맞게 바뀝니다.
-            어느 쪽이든 참조 1이 지킬 쪽, 참조 2가 가져올 쪽입니다.
+            예시를 고르면 전문이 위 입력란에 들어가고, 그 글이 그대로 나갑니다. 아래 참조
+            1·2에 무엇을 올려야 하는지도 그 예시에 맞게 바뀝니다. 어느 쪽이든 참조 1이 지킬
+            쪽, 참조 2가 가져올 쪽입니다.
+          </p>
+
+          <div className="mt-3 flex items-center gap-2">
+            <span className="text-xs text-muted">언어</span>
+            {PRESET_LANGS.map(({ key, label }) => (
+              <Chip
+                key={key}
+                active={state.presetLang === key}
+                onClick={() =>
+                  onChange({
+                    presetLang: key,
+                    // 예시를 보고 있는 중이면 같은 예시의 반대 언어 전문으로 갈아끼운다.
+                    ...(preset ? { prompt: preset.text[key] } : {}),
+                  })
+                }
+              >
+                {label}
+              </Chip>
+            ))}
+          </div>
+          <p className="mt-1.5 text-xs leading-relaxed text-muted">
+            모델은 영어를 더 정확히 따릅니다. 결과가 아쉬우면 English로 바꿔보세요. 고쳐
+            쓴 내용은 언어를 바꾸면 사라집니다.
           </p>
 
           <div className="mt-3 space-y-3">
@@ -209,7 +243,7 @@ export default function ImageGen({
                     onChange(
                       state.presetId === p.id
                         ? { presetId: null }
-                        : { presetId: p.id, prompt: p.text },
+                        : { presetId: p.id, prompt: p.text[state.presetLang] },
                     )
                   }
                 >
