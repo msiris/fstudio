@@ -4,6 +4,7 @@ import { SCREEN_TITLES } from './constants';
 import { clearApiKey, loadApiKey, saveApiKey } from './lib/keyStore';
 import History from './screens/History';
 import Home from './screens/Home';
+import People from './screens/People';
 import ImageGen from './screens/ImageGen';
 import MultiSwap from './screens/MultiSwap';
 import SingleSwap from './screens/SingleSwap';
@@ -97,6 +98,7 @@ export default function App() {
           />
         )}
         {screen === 'history' && <History apiKey={apiKey} />}
+        {screen === 'people' && <People />}
         {screen === 'gen' && (
           <ImageGen
             state={gen}

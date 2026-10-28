@@ -8,6 +8,7 @@ export const SCREEN_TITLES: Record<Exclude<Screen, 'home'>, string> = {
   multi: '여러 얼굴 바꾸기',
   gen: '이미지 만들기',
   history: '기록',
+  people: '인물 보관함',
 };
 
 /** Multi Swap에서 고를 수 있는 얼굴 수. */

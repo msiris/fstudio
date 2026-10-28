@@ -120,6 +120,21 @@ API 스코프 키로 부르면 401이 돌아오고, 그 사정을 키 패널에�
 업로드한 이미지는 메모리에만 있다. 새로고침하면 사라진다.
 **생성 결과는 기록에 남는다** — 아래 참고.
 
+### 인물 보관함
+
+같은 사람을 각도별로 여러 장 등록해두고, Image Gen의 참조 이미지 칸에서 칩 한 번으로
+꺼내 쓴다. 각도가 다른 장면에 인물을 넣을 때마다 사진을 다시 올리지 않아도 된다.
+
+홈의 **인물 보관함**에서 이름과 사진(최대 6장)으로 등록하고, 카드를 눌러 이름과 사진을
+고치거나 지운다. 삭제는 두 번 눌러야 한다.
+
+기록과 마찬가지로 가벼운 것과 무거운 것을 나눠 담는다 —
+`people` 에는 이름·장수·썸네일만, `photos` 에는 원본을 넣는다.
+목록과 칩은 썸네일만 읽고, 원본은 참조로 넣을 때만 꺼낸다.
+
+`face-studio-people` 이라는 별도 데이터베이스를 쓴다. 기록과 버전을 서로 끌고 다니지
+않게 하려는 것이다.
+
 ### 기록
 
 만든 이미지는 IndexedDB에 **누적해서** 쌓인다. 홈의 **기록 보기** 에서 다시 꺼내 저장할 수 있다.
@@ -211,7 +226,8 @@ FLUX schnell은 참조를 받지 않으며, 참조가 올라와 있으면 화면
 
 - **같은 사람을 각도별로 여러 장 넣는다.** 참조는 6장까지 받는다. 여러 장을 주면 모델이
   얼굴의 입체 구조를 파악해서 새 각도를 훨씬 정확하게 그린다. 예시 문구가 이미
-  "여러 장이면 같은 사람의 다른 각도로 읽어라"라고 지시한다
+  "여러 장이면 같은 사람의 다른 각도로 읽어라"라고 지시한다.
+  매번 올리지 않도록 **인물 보관함**에 등록해두고 칩으로 꺼내 쓴다 (아래 참고)
 - **Ideogram Character 모델로 바꾼다.** 얼굴을 픽셀로 베끼는 대신 인물을 따로 인식해서
   장면에 넣도록 만들어진 모델이다. 각도가 크게 어긋날 때 먼저 시도해볼 선택지다
 
@@ -288,13 +304,14 @@ src/
 │  ├─ fal.ts             callFal 단일 호출 함수, 오류 문구
 │  ├─ falAccount.ts      크레딧 잔액 조회 (ADMIN 스코프 필요)
 │  ├─ history.ts         생성 기록과 진행 중 요청 (IndexedDB)
+│  ├─ people.ts          인물 보관함 (IndexedDB)
 │  ├─ download.ts        data URL 내려받기
 │  ├─ run.ts             세 모드 공용 실행 흐름
 │  ├─ image.ts           업로드 검사(jpg/png/webp, 10MB), data URL 변환
 │  └─ keyStore.ts        API 키 저장
 ├─ components/           Card, ImageDrop, Chip, ModelPicker, CreditBadge 등
-├─ hooks/                useCredits, useHistory, usePending
-└─ screens/              Home, SingleSwap, MultiSwap, ImageGen, History
+├─ hooks/                useCredits, useHistory, usePending, usePeople
+└─ screens/              Home, SingleSwap, MultiSwap, ImageGen, History, People
 
 public/
 ├─ manifest.webmanifest  홈 화면 설치 정보
