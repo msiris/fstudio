@@ -6,6 +6,7 @@ import ImageDrop from '../components/ImageDrop';
 import PersonChips from '../components/PersonChips';
 import ModelPicker from '../components/ModelPicker';
 import PrimaryButton from '../components/PrimaryButton';
+import RunCost from '../components/RunCost';
 import ResultPanel from '../components/ResultPanel';
 import SectionLabel from '../components/SectionLabel';
 import Toggle from '../components/Toggle';
@@ -179,6 +180,12 @@ export default function MultiSwap({
         onChange={(id) => onChange({ model: id })}
         quality={state.quality}
         onChangeQuality={(quality) => onChange({ quality })}
+      />
+
+      <RunCost
+        model={model}
+        quality={state.quality}
+        imageCount={state.target ? 1 + usedFaces.length : 0}
       />
 
       <PrimaryButton disabled={!ready} busy={state.busy} onClick={() => void run()}>

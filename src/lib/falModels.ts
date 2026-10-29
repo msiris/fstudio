@@ -48,6 +48,13 @@ export type FalModel = {
    * 정액 과금이거나 해상도를 못 고르는 모델은 여기가 비어 있다.
    */
   qualities?: Quality[];
+  /**
+   * 호출당 예상 요금(USD). 실행 전에 화면에 띄워서, 모르는 사이에 늘어나지 않게 한다.
+   *
+   * fal이 공개한 값이고 잠정이라고 표시돼 있다. 어긋날 수 있다.
+   * 확인하지 못한 모델은 비워둔다. 틀린 숫자를 보여주느니 안 보여주는 쪽이 낫다.
+   */
+  price?: (input: { quality: Quality; imageCount: number }) => number;
   resolve(input: ModelInput): FalRequest;
 };
 
@@ -93,6 +100,7 @@ type SeedreamSpec = {
   autoSize: (quality: Quality) => string;
   /** 해상도를 고를 수 있는 모델만 채운다. */
   qualities?: Quality[];
+  price: (input: { quality: Quality; imageCount: number }) => number;
   note: Record<ModelKind, string>;
 };
 
@@ -111,6 +119,7 @@ const seedream =
     kind,
     acceptsImages: true,
     qualities: spec.qualities,
+    price: spec.price,
     resolve: ({ prompt, images, ratio, quality }) =>
       images.length
         ? {
@@ -142,6 +151,10 @@ const seedream5 = seedream({
   edit: 'bytedance/seedream/v5/pro/edit',
   autoSize: (quality) => (quality === '1K' ? 'auto_1K' : 'auto_2K'),
   qualities: ['1K', '2K'],
+  // 출력 1장 값에, 두 번째 입력 이미지부터 장당 $0.0045가 붙는다.
+  // 참조를 여러 각도로 넣으면 여기서 늘어난다.
+  price: ({ quality, imageCount }) =>
+    (quality === '2K' ? 0.135 : 0.0675) + 0.0045 * Math.max(0, imageCount - 1),
   note: {
     edit: '한 부분만 바꾸고 나머지 화면은 그대로 두도록 만들어진 모델. 얼굴이 흔들린다면 이쪽을 먼저 쓴다. 1K는 장당 약 $0.0675, 2K는 그 두 배다.',
     generate: '가장 최신 Seedream. 참조 이미지를 넣으면 편집 엔드포인트로 자동 전환된다. 1K는 장당 약 $0.0675, 2K는 그 두 배다.',
@@ -154,6 +167,8 @@ const seedream45 = seedream({
   edit: 'fal-ai/bytedance/seedream/v4.5/edit',
   // 정액 과금이라 해상도를 낮춰도 요금이 줄지 않는다. 선택지를 띄우지 않는다.
   autoSize: () => 'auto_2K',
+  // 정액이다. 해상도도 입력 장수도 요금에 영향을 주지 않는다.
+  price: () => 0.04,
   note: {
     edit: '장당 약 $0.04 정액. 해상도와 무관하다. 5 Pro 1K보다 싸서 반복 시험에 쓸 만하다.',
     generate: '생성과 편집을 한 모델로 처리한다. 장당 약 $0.04 정액.',

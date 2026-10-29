@@ -5,6 +5,7 @@ import ImageDrop from '../components/ImageDrop';
 import ModelPicker from '../components/ModelPicker';
 import PersonChips from '../components/PersonChips';
 import PrimaryButton from '../components/PrimaryButton';
+import RunCost from '../components/RunCost';
 import ResultPanel from '../components/ResultPanel';
 import SectionLabel from '../components/SectionLabel';
 import Toggle from '../components/Toggle';
@@ -335,6 +336,8 @@ export default function ImageGen({
           desc="명령하지 않은 부분은 원본 그대로 둡니다"
         />
       )}
+
+      <RunCost model={model} quality={state.quality} imageCount={images.length} />
 
       <PrimaryButton
         disabled={!state.prompt.trim() || needsRefs}
