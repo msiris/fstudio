@@ -411,6 +411,34 @@ public/
 └─ icon-*.png            scripts/make-icons.mjs 가 만든다
 ```
 
+### 참조로 무엇을 할지는 지시가 정한다
+
+프롬프트 레이어가 참조 이미지의 용도를 미리 정해두면 안 된다. 전에는 이렇게 보냈다.
+
+```
+The second image is a reference photograph of the person whose face should be used.
+Take from the reference photographs only what the instruction explicitly asks for.
+Do not take their clothing, background, pose, framing, or lighting.
+```
+
+**"2번 의상 입혀줘" 라고 해도 2번 얼굴이 나왔다.** 첫 줄이 참조를 얼굴용으로 못박고,
+셋째 줄이 의상을 가져오는 것을 직접 금지하고 있었기 때문이다. 얼굴 교체만 머릿속에 두고
+쓴 문장이 다른 모든 작업과 싸웠다.
+
+지금은 참조가 **무엇인지만** 말하고, 그것으로 무엇을 할지는 지시에 맡긴다.
+
+```
+The second image is a reference photograph, supplied as a source to draw from.
+Take from the reference photographs exactly what the instruction names,
+and do not import anything it does not name.
+```
+
+얼굴 각도 문단도 같은 이유로 조건을 달았다. 첫 문장이
+"얼굴이나 정체성을 가져오라고 했을 때만 적용하고, 의상·배경·자세를 요구했으면 이 문단을
+통째로 무시하라"고 말한다. 조건 없이 붙이면 그 문단 하나가 또 얼굴을 끌고 온다.
+
+쓸모 있는 제약과 용도를 못박는 문장은 다르다. 앞의 것은 남기고 뒤의 것은 지운다.
+
 ### 프롬프트 레이어
 
 `src/lib/prompt.ts` 는 UI 코드와 섞지 않는다. 결과가 마음에 안 들면 이 파일만 본다.

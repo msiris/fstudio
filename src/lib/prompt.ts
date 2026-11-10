@@ -63,8 +63,15 @@ const FACE_LOCK = [
   'Do not beautify, slim, smooth, de-age, or retouch the face.',
 ].join(' ');
 
-/** 참조 인물의 얼굴 각도가 사진과 다를 때. */
+/**
+ * 참조 인물의 얼굴 각도가 사진과 다를 때.
+ *
+ * 얼굴을 가져오라고 했을 때만 적용되도록 첫 문장에서 조건을 단다.
+ * 조건 없이 붙이면 "2번 의상 입혀"라고 해도 2번 얼굴까지 끌고 온다.
+ * 참조로 무엇을 할지는 지시가 정한다. 이 레이어가 미리 정해두면 안 된다.
+ */
 const FACE_ANGLE = [
+  "If the instruction asks you to take a person's face or identity from the reference photographs, the rest of this paragraph applies. If it asks for something else — clothing, a background, a pose — ignore this paragraph entirely and leave the face in the photograph alone.",
   'The head angle, gaze direction, and expression in the photograph are probably different from the reference photographs. Do not copy the reference pixels and do not rotate the head in the photograph to match the reference.',
   `Re-render the reference person's face at the angle the photograph already has, and carry the identity across by matching these traits exactly, because they do not change with angle: ${IDENTITY_TRAITS}.`,
   'Someone who knows this person must recognise them at a glance.',
@@ -207,6 +214,10 @@ export function buildGenerationPrompt(
  * 참조 인물이 몇 명이고 각자 몇 장인지 알려준다.
  * [3] = 한 사람 3장, [2, 2] = 두 사람 각 2장.
  * 한 사람을 여러 각도로 넣을 수 있게 되면서 장수만으로는 구분이 안 된다.
+ *
+ * 여기서는 참조가 "무엇인지"만 말하고, 그것으로 "무엇을 할지"는 말하지 않는다.
+ * 전에는 "쓸 얼굴의 참조 사진"이라고 못박아서, 옷을 가져오라고 해도 얼굴이 따라왔다.
+ * 참조의 용도는 매번 다르고, 그것을 정하는 것은 지시다.
  */
 function referenceLine(groups: number[]): string {
   const total = groups.reduce((sum, n) => sum + n, 0);
@@ -214,8 +225,8 @@ function referenceLine(groups: number[]): string {
 
   if (groups.length === 1) {
     return groups[0] === 1
-      ? 'The second image is a reference photograph of the person whose face should be used.'
-      : `The following ${groups[0]} images are reference photographs of ONE person, taken at different angles. Read them together to understand the three-dimensional shape of that person's face, and use whichever is closest to the angle in the photograph as the main guide.`;
+      ? 'The second image is a reference photograph, supplied as a source to draw from.'
+      : `The following ${groups[0]} images are reference photographs of ONE person, taken at different angles. Read them together to understand the three-dimensional shape of that person's face.`;
   }
 
   let index = 2;
@@ -227,7 +238,7 @@ function referenceLine(groups: number[]): string {
     return `${range} ${count === 1 ? 'is' : 'are'} person ${i + 1}${suffix}`;
   });
 
-  return `The reference photographs are grouped by person: ${parts.join(', ')}. Map person 1 to the leftmost face in the photograph, person 2 to the next, and so on from left to right. Where a person has several photographs, read them together to understand the three-dimensional shape of that person's face.`;
+  return `The reference photographs are grouped by person: ${parts.join(', ')}. When the instruction asks you to place these people into the photograph, map person 1 to the leftmost face, person 2 to the next, and so on from left to right. Where a person has several photographs, read them together to understand the three-dimensional shape of that person's face.`;
 }
 
 export type EditPromptOptions = {
@@ -256,7 +267,7 @@ export function buildEditPrompt(raw: string, options: EditPromptOptions = {}): s
 
     hasReferences && referenceLine(faceGroups.filter((n) => n > 0)),
     hasReferences &&
-      'Take from the reference photographs only what the instruction explicitly asks for. Do not take their clothing, background, pose, framing, or lighting.',
+      'Take from the reference photographs exactly what the instruction names, and do not import anything it does not name.',
 
     `Instruction: ${raw.trim()}`,
     languageNote(raw),
