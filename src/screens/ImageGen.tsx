@@ -353,7 +353,7 @@ export default function ImageGen({
         sentPrompt={state.sentPrompt}
         busy={state.busy}
         progress={state.progress}
-        fileName="face-studio-gen.png"
+        mode="gen"
       />
     </div>
   );

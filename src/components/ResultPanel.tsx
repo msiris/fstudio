@@ -1,5 +1,6 @@
 import { Download, Image as ImageIcon, Loader2 } from 'lucide-react';
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
+import { resultFileName } from '../lib/fileName';
 import Card from './Card';
 import SectionLabel from './SectionLabel';
 import { FOCUS_RING } from './ui';
@@ -44,7 +45,7 @@ export default function ResultPanel({
   sentPrompt,
   busy = false,
   progress = null,
-  fileName = 'face-studio.png',
+  mode,
 }: {
   src?: string | null;
   note?: string | null;
@@ -52,8 +53,12 @@ export default function ResultPanel({
   busy?: boolean;
   /** 큐 진행 상태. 멈춘 게 아니라는 걸 보여준다. */
   progress?: string | null;
-  fileName?: string;
+  /** 파일 이름에 넣을 모드 이름. single, multi, gen. */
+  mode: string;
 }) {
+  // 결과가 바뀔 때만 이름을 새로 짓는다. 다시 그릴 때마다 시각이 바뀌면 안 된다.
+  const fileName = useMemo(() => resultFileName(mode), [mode, src]);
+
   const elapsed = useElapsed(busy);
   const cardRef = useRef<HTMLDivElement>(null);
 

@@ -167,7 +167,7 @@ export default function SingleSwap({
         sentPrompt={state.sentPrompt}
         busy={state.busy}
         progress={state.progress}
-        fileName="face-studio-single.png"
+        mode="single"
       />
     </div>
   );

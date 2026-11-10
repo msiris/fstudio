@@ -6,6 +6,7 @@ import { FOCUS_RING } from '../components/ui';
 import { useHistory } from '../hooks/useHistory';
 import { usePending } from '../hooks/usePending';
 import { downloadDataUrl } from '../lib/download';
+import { modeSlug, resultFileName } from '../lib/fileName';
 import { getHistoryImage, type HistoryEntry, type PendingRequest } from '../lib/history';
 
 function formatDate(ms: number): string {
@@ -37,7 +38,10 @@ function HistoryCard({
     setSaving(true);
     try {
       const image = await getHistoryImage(entry.id);
-      downloadDataUrl(image ?? entry.thumb, `face-studio-${entry.createdAt}.png`);
+      downloadDataUrl(
+        image ?? entry.thumb,
+        resultFileName(modeSlug(entry.mode), entry.createdAt),
+      );
     } finally {
       setSaving(false);
     }

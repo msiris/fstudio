@@ -198,7 +198,7 @@ export default function MultiSwap({
         sentPrompt={state.sentPrompt}
         busy={state.busy}
         progress={state.progress}
-        fileName="face-studio-multi.png"
+        mode="multi"
       />
     </div>
   );
