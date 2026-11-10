@@ -1,5 +1,5 @@
 import { Clock, Download, Loader2, Trash2 } from 'lucide-react';
-import { useState } from 'react';
+import { useCallback, useState } from 'react';
 import Card from '../components/Card';
 import Notice from '../components/Notice';
 import { FOCUS_RING } from '../components/ui';
@@ -156,75 +156,192 @@ function PendingCard({
   );
 }
 
+type Tab = 'images' | 'pending';
+
+function TabButton({
+  active,
+  count,
+  onClick,
+  children,
+}: {
+  active: boolean;
+  count: number;
+  onClick: () => void;
+  children: string;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      aria-pressed={active}
+      className={`flex h-field flex-1 items-center justify-center gap-1.5 rounded-card text-sm font-semibold transition-colors ${FOCUS_RING} ${
+        active ? 'bg-card text-text shadow-sm' : 'text-muted hover:text-text'
+      }`}
+    >
+      {children}
+      <span className="tabular-nums text-xs font-medium opacity-70">{count}</span>
+    </button>
+  );
+}
+
+/**
+ * 기록 화면.
+ *
+ * 만들어진 이미지와 진행 중인 요청을 탭으로 나눈다.
+ * 전에는 한 줄로 이어 붙여서, 되찾지 못한 요청이 쌓이면 정작 만들어진 이미지가
+ * 화면 저 아래로 밀려났다. 실패한 걸 확인하러 들어왔다가 성공한 걸 못 찾는 꼴이었다.
+ *
+ * 기본은 이미지 쪽이다. 진행 중인 것이 있으면 이미지 탭 위에 한 줄로 알린다.
+ * 탭 뒤에 숨어서 영영 안 보이면 되찾으라고 남겨둔 의미가 없다.
+ */
 export default function History({ apiKey }: { apiKey: string }) {
   const { entries, total, usage, loading, hasMore, error, loadMore, remove, clear, reload } =
     useHistory();
-  const pendingState = usePending(apiKey, reload);
+  const [tab, setTab] = useState<Tab>('images');
+
+  // 되찾은 결과는 이미지 쪽에 쌓인다. 거기로 데려가야 받은 것이 보인다.
+  const onRecovered = useCallback(() => {
+    reload();
+    setTab('images');
+  }, [reload]);
+
+  const pendingState = usePending(apiKey, onRecovered);
   const [clearing, setClearing] = useState(false);
+  const [discarding, setDiscarding] = useState(false);
+
+  const pendingCount = pendingState.pending.length;
 
   return (
     <div className="space-y-4">
-      {pendingState.error && <Notice>{pendingState.error}</Notice>}
-
-      {pendingState.pending.map((item) => (
-        <PendingCard
-          key={item.requestId}
-          item={item}
-          working={pendingState.workingId === item.requestId}
-          onRecover={() => void pendingState.recover(item)}
-          onDiscard={() => void pendingState.discard(item.requestId)}
-        />
-      ))}
-
-      <div className="flex items-center justify-between gap-3">
-        <div className="text-xs text-muted">
-          {total}장{usage !== null && ` · ${formatBytes(usage)} 사용 중`}
-        </div>
-        {total > 0 && (
-          <button
-            type="button"
-            onClick={() => {
-              if (clearing) {
-              void clear();
-              void pendingState.reload();
-            }
-              else {
-                setClearing(true);
-                setTimeout(() => setClearing(false), 3000);
-              }
-            }}
-            className={`rounded-lg px-2 py-1 text-xs font-medium ${FOCUS_RING} ${
-              clearing ? 'text-accent' : 'text-muted hover:text-text'
-            }`}
-          >
-            {clearing ? '전부 지울까요?' : '전체 삭제'}
-          </button>
-        )}
+      <div className="flex gap-1 rounded-card bg-cardAlt p-1">
+        <TabButton active={tab === 'images'} count={total} onClick={() => setTab('images')}>
+          이미지
+        </TabButton>
+        <TabButton
+          active={tab === 'pending'}
+          count={pendingCount}
+          onClick={() => setTab('pending')}
+        >
+          진행 중
+        </TabButton>
       </div>
 
-      {error && <Notice>{error}</Notice>}
+      {pendingState.error && <Notice>{pendingState.error}</Notice>}
 
-      {loading && <p className="text-xs text-muted">불러오는 중</p>}
+      {tab === 'images' ? (
+        <>
+          {pendingCount > 0 && (
+            <button
+              type="button"
+              onClick={() => setTab('pending')}
+              className={`flex w-full items-center gap-2 rounded-card border border-accent/40 bg-card px-4 py-3 text-left text-xs leading-relaxed text-muted ${FOCUS_RING}`}
+            >
+              <Clock size={13} className="shrink-0 text-accent" />
+              <span>
+                결과를 못 받은 요청이 <span className="font-semibold text-text">
+                  {pendingCount}건
+                </span> 있습니다. 눌러서 가져오세요.
+              </span>
+            </button>
+          )}
 
-      {!loading && !error && entries.length === 0 && (
-        <Notice>
-          아직 기록이 없습니다. 이미지를 만들면 여기에 쌓입니다. 이 브라우저에만 저장되고
-          지우기 전까지 남습니다.
-        </Notice>
-      )}
+          <div className="flex items-center justify-between gap-3">
+            <div className="text-xs text-muted">
+              {total}장{usage !== null && ` · ${formatBytes(usage)} 사용 중`}
+            </div>
+            {total > 0 && (
+              <button
+                type="button"
+                onClick={() => {
+                  if (clearing) {
+                    void clear();
+                  } else {
+                    setClearing(true);
+                    setTimeout(() => setClearing(false), 3000);
+                  }
+                }}
+                className={`rounded-lg px-2 py-1 text-xs font-medium ${FOCUS_RING} ${
+                  clearing ? 'text-accent' : 'text-muted hover:text-text'
+                }`}
+              >
+                {clearing ? '전부 지울까요?' : '전체 삭제'}
+              </button>
+            )}
+          </div>
 
-      {entries.map((entry) => (
-        <HistoryCard key={entry.id} entry={entry} onRemove={(id) => void remove(id)} />
-      ))}
+          {error && <Notice>{error}</Notice>}
 
-      {hasMore && (
-        <button
-          type="button"
-          onClick={() => void loadMore()}
-          className={`flex h-field w-full items-center justify-center rounded-card border border-line bg-card text-sm font-medium text-text ${FOCUS_RING}`}
-        >
-          더 보기
-        </button>
+          {loading && <p className="text-xs text-muted">불러오는 중</p>}
+
+          {!loading && !error && entries.length === 0 && (
+            <Notice>
+              아직 기록이 없습니다. 이미지를 만들면 여기에 쌓입니다. 이 브라우저에만 저장되고
+              지우기 전까지 남습니다.
+            </Notice>
+          )}
+
+          {entries.map((entry) => (
+            <HistoryCard key={entry.id} entry={entry} onRemove={(id) => void remove(id)} />
+          ))}
+
+          {hasMore && (
+            <button
+              type="button"
+              onClick={() => void loadMore()}
+              className={`flex h-field w-full items-center justify-center rounded-card border border-line bg-card text-sm font-medium text-text ${FOCUS_RING}`}
+            >
+              더 보기
+            </button>
+          )}
+        </>
+      ) : (
+        <>
+          {pendingCount === 0 ? (
+            <Notice>
+              가져올 요청이 없습니다. 만드는 도중 앱이 꺼지거나 연결이 끊기면 여기에 남고,
+              요금이 이미 나간 요청이므로 나중에 결과를 가져올 수 있습니다.
+            </Notice>
+          ) : (
+            <>
+              <div className="flex items-center justify-between gap-3">
+                <div className="text-xs text-muted">{pendingCount}건</div>
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (discarding) {
+                      void pendingState.discardAll();
+                      setDiscarding(false);
+                    } else {
+                      setDiscarding(true);
+                      setTimeout(() => setDiscarding(false), 3000);
+                    }
+                  }}
+                  className={`rounded-lg px-2 py-1 text-xs font-medium ${FOCUS_RING} ${
+                    discarding ? 'text-accent' : 'text-muted hover:text-text'
+                  }`}
+                >
+                  {discarding ? '목록에서 전부 지울까요?' : '전부 지우기'}
+                </button>
+              </div>
+
+              <p className="text-xs leading-relaxed text-muted">
+                제출은 됐는데 결과를 못 받은 요청입니다. 요금은 이미 나갔으므로 가져오면
+                그대로 이미지가 됩니다. 콘텐츠 정책에 막힌 요청은 가져와도 결과가 없습니다 —
+                그때는 지우세요.
+              </p>
+
+              {pendingState.pending.map((item) => (
+                <PendingCard
+                  key={item.requestId}
+                  item={item}
+                  working={pendingState.workingId === item.requestId}
+                  onRecover={() => void pendingState.recover(item)}
+                  onDiscard={() => void pendingState.discard(item.requestId)}
+                />
+              ))}
+            </>
+          )}
+        </>
       )}
     </div>
   );

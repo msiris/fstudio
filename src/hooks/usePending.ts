@@ -56,5 +56,15 @@ export function usePending(apiKey: string, onRecovered: () => void) {
     [reload],
   );
 
-  return { pending, workingId, error, recover, discard, reload };
+  /**
+   * 되찾을 수 없는 요청이 쌓이면 목록이 쓰레기통이 된다.
+   * 막힌 요청은 가져와도 결과가 없으므로 한 번에 비울 길이 있어야 한다.
+   */
+  const discardAll = useCallback(async () => {
+    const ids = (await listPending()).map((item) => item.requestId);
+    for (const id of ids) await removePending(id);
+    await reload();
+  }, [reload]);
+
+  return { pending, workingId, error, recover, discard, discardAll, reload };
 }
